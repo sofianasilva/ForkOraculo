@@ -1,41 +1,87 @@
+# Oráculo
+Este projeto almeja desenvolver uma plataforma de chatbot para agilizar e simplificar respostas de perguntas sobre o estado das tarefas de uma equipe de desenvolvimento.
 
-# Título do Projeto
-Uma breve descrição do projeto e seu propósito.
+Para este fim, planejamos integrar ferramentas como repositório do Github, JIRA... e utilizando uma IA para fazer queries SQL e retornar a resposta certa.
+
 
 ## Sobre o projeto
-Explique aqui o que é o projeto, qual problema ele resolve e qual é o seu objetivo principal. Adicione também informações sobre o contexto em que ele foi criado.
-## Pré-requisitos
-Antes de começar, certifique-se de que você tem os seguintes requisitos instalados:
+Um chatbot que utiliza a IA para pesquisar em um banco com  dados, de ferramentas integradas (Github, JIRA, ...), afim de agilizar uma resposta à uma pergunta do tipo: O que **membro da equipe de desenvolvimento** está trabalhando agora?
 
-- [Node.js](https://nodejs.org/) (se aplicável)
-- [Python 3.x](https://www.python.org/) (se aplicável)
-- [Docker](https://www.docker.com/) (se aplicável)
-- Outras dependências...
+Criado para simplificar o processo de gerenciamento de uma equipe.
+
+## Pré-requisitos
+
+Antes de começar, certifique-se de que você tem os seguintes requisitos instalados:
+- [Docker](https://www.docker.com/)
+  - Utilizado para subir o banco de dados Postgres, na versão 15.
+- [Python 3.10](https://www.python.org/)
+  - Utilizar a lib Airbyte para buscar dados do Github
+
 ## Instalação
 Siga estas etapas para configurar o projeto localmente:
 
-1. Instale my-project com npm
+1. Gere um token pessoal no [Github](https://github.com) e insira com a chave **GITHUB_TOKEN** no arquivo .env
 
-```bash
-  npm install my-project
-  cd my-project
-```
+    - Pode ser gerado [**aqui**](https://github.com/settings/tokens)
 
-2. Configure as variáveis de ambiente
-Crie um arquivo `.env` na raiz do projeto e adicione as variáveis necessárias.
 
-3. Execute o projeto com o comando:
+2. Utilize os comandos a seguir para iniciar e parar contêiner com o banco de dados
+
+    Para iniciar o contêiner:
+    ```bash
+      docker compose up -d
+    ```
+
+    Para parar o contêiner:
+    ```bash
+      docker compose down -d
+    ```
+
+3. Inicie um ambiente virtual e ative-o
+
+    Iniciando um ambiente virtual:
+    ```bash
+      python -m venv .venv
+    ```
+
+    Ativando o ambiente virtual, no Linux e MacOS:
+    ```bash
+      source .venv/bin/activate
+    ```
+
+    No Windows Powershell:
+    ```bash
+      .venv\Scripts\Activate.ps1
+    ```
+
+    Desativando o ambiente virtual:
+    ```bash
+      deactivate
+    ```
+
+4. Instale os requerimentos do projeto com o comando:
+    ```bash
+      pip install -r py_requirements.txt
+    ```
+
+5. Após sucesso na instalação dos requerimentos, rode o arquivo python principal:
+    ```bash
+      python main.py
+    ```
+
 ## Estrutura de diretórios
-Explique a estrutura do projeto, se necessário:
 
 ```
-nome-do-repositorio/
+Oraculo/
 ├── src/
-│   ├── main.js
-│   └── ...
+│   └── etl/
+│       └── airbyte.py
+├── main.py
+├── py_requirements.txt
+├── docker-compose-yml
 ├── .env
 ├── .gitignore
-├── LICENSE
-├── README.md
-└── package.json
+├── CODE_OF_CONDUCT.md
+├── CONTRIBUTING.md
+└── README.md
 ```
