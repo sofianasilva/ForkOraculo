@@ -69,17 +69,46 @@ Siga estas etapas para configurar o projeto localmente:
       python main.py
     ```
 
+    Ou inicie a aplicação FastAPI com:
+    ```bash
+    uvicorn src.app:app --reload
+    ```
+
+## Uso da API
+
+Uma vez que a aplicação esteja em execução, você pode enviar uma requisição POST para o endpoint `/ask` com um corpo JSON contendo sua pergunta. Por exemplo:
+
+```json
+{
+  "question": "Me liste os produtos e suas quantidades em estoque"
+}
+```
+
+A aplicação retornará o resultado da consulta SQL gerada com base na sua pergunta.
+
 ## Estrutura de diretórios
 
 ```
 Oraculo/
 ├── src/
-│   └── etl/
-│       └── airbyte.py
-├── main.py
-├── py_requirements.txt
-├── docker-compose-yml
-├── .env
+│   ├── etl/
+│   │   └── airbyte.py
+│   ├── database/
+│   │   ├── __init__.py
+│   │   └── vanna_client.py    
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── routes.py          
+│   ├── models/
+│   │   ├── __init__.py
+│   │   └── query.py           
+│   └── config.py              
+├── app.py                     
+├── main.py                    
+├── py_requirements.txt        
+├── docker-compose.yml
+├── .env                       
+├── .env.example               
 ├── .gitignore
 ├── CODE_OF_CONDUCT.md
 ├── CONTRIBUTING.md
