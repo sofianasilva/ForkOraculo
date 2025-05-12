@@ -89,28 +89,26 @@ A aplicação retornará o resultado da consulta SQL gerada com base na sua perg
 ## Estrutura de diretórios
 
 ```
+
 Oraculo/
-├── src/
-│   ├── etl/
-│   │   └── airbyte.py
-│   ├── database/
-│   │   ├── __init__.py
-│   │   └── vanna_client.py    
-│   ├── api/
-│   │   ├── __init__.py
-│   │   └── routes.py          
-│   ├── models/
-│   │   ├── __init__.py
-│   │   └── query.py           
-│   └── config.py              
-├── app.py                     
-├── main.py                    
-├── py_requirements.txt        
-├── docker-compose.yml
-├── .env                       
-├── .env.example               
+├── .github/                 
+├── src/                    
+│   ├── etl/             
+│   ├── fastapi/           
+│   ├── n8n/
+│   │     └── My_workflow.json      
+│   ├── open-web-ui/
+│   │     └── pipe-conexaoWebhook.py          
+│   └── vanna/
+│         └── vanna-ai.py                      
 ├── .gitignore
-├── CODE_OF_CONDUCT.md
-├── CONTRIBUTING.md
-└── README.md
+├── chroma.sqlite3             
+├── CODE_OF_CONDUCT.md      
+├── CONTRIBUTING.md                             
+├── docker-compose.yml      
+├── example.env             
+├── main.py
+├── py_requirements.txt                 
+└── README.md     
+
 ```
