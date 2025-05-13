@@ -86,15 +86,100 @@ Uma vez que a aplicação esteja em execução, você pode enviar uma requisiç�
 
 A aplicação retornará o resultado da consulta SQL gerada com base na sua pergunta.
 
+## Uso do n8n e OpenWebUI
+
+Para abrir as ferramentas, acesse:
+
+- **n8n**: [http://localhost:5678](http://localhost:5678)  
+- **OpenWebUI**: [http://localhost:3000](http://localhost:3000)
+
+### n8n
+
+Insira no workflow a API do AI Agent.  
+Para obter a API Key, acesse: [https://ai.google.dev/gemini-api/docs/api-key?hl=pt-br](https://ai.google.dev/gemini-api/docs/api-key?hl=pt-br)
+
+### OpenWebUI
+
+Adicione a pipeline como uma nova função e altere o endpoint, utilizando o webhook do n8n.  
+**Atenção**: Substitua `'localhost'` por `'host.docker.internal'` para garantir a comunicação correta entre os containers.
+
+## Arquitetura e Modularização
+
+O projeto é dividido em módulos bem definidos que seguem uma arquitetura desacoplada, com responsabilidades específicas. Abaixo, explicamos de forma clara o papel de cada componente:
+
+### Componentes Principais
+
+- **🔁 Airbyte (ETL)**  
+  Responsável por extrair dados de fontes externas como o GitHub. Ele coleta essas informações e envia para o banco de dados.
+
+- **⚙️ Backend (FastAPI)**  
+  API desenvolvida em FastAPI, responsável por receber as perguntas, processá-las com ajuda da IA (Vanna.AI), gerar a consulta SQL e retornar a resposta ao usuário.  
+  Local: `src/fastapi/`
+
+- **🧠 Vanna.AI (LLM)**  
+  Modelo de linguagem usado para interpretar perguntas em linguagem natural e gerar a SQL correspondente.  
+  Local: `src/vanna/`
+
+- **🌐 OpenWebUI (Interface)**  
+  Interface Web usada para interagir com o usuário final. Permite enviar perguntas e visualizar respostas.  
+  Local: `src/open-web-ui/`
+
+- **🔗 n8n (Automação)**  
+  Plataforma de automação que conecta o OpenWebUI ao backend via Webhook. Gerencia a comunicação entre as partes.  
+  Local: `src/n8n/`
+
+---
+
+### Visão Geral do Fluxo de Dados
+
+```
+Usuário (interface OpenWebUI)
+         ↓
+      Webhook
+         ↓
+       n8n (automação)
+         ↓
+  FastAPI (backend/API)
+         ↓
+     Vanna.AI (LLM)
+         ↓
+    SQL → Banco de dados
+         ↓
+   ↪ Resposta exibida ao usuário
+```
+
+---
+
+### Resumo da Arquitetura por Papel
+
+| Componente     | Papel              | Descrição                                                                 |
+|----------------|--------------------|---------------------------------------------------------------------------|
+| OpenWebUI      | Interface           | Frontend para o usuário interagir com o sistema                          |
+| FastAPI        | Backend/API         | Processa as perguntas e coordena as respostas                            |
+| Airbyte        | ETL                 | Coleta dados externos e injeta no banco de dados                         |
+| Vanna.AI       | LLM / IA            | Converte perguntas em SQL com base na linguagem natural                  |
+| n8n            | Orquestrador        | Encaminha dados entre frontend, backend e IA usando Webhooks             |
+| Postgres/Chroma| Banco de Dados      | Armazena dados coletados e usados pela IA                                |
+
+
 ## Estrutura de diretórios
 
 ```
-
 Oraculo/
 ├── .github/                 
 ├── src/                    
-│   ├── etl/             
-│   ├── fastapi/           
+│   ├── etl/
+│   │     └── airbyte.py             
+│   ├── fastapi/
+│   │    ├── api/
+│   │    │    └── routes.py
+│   │    ├── database/
+│   │    │    └── vanna_client.py
+│   │    ├── models/
+│   │    │    └── query.py
+│   │    ├── app.py
+│   │    ├── chroma.sqlite3
+│   │    └── config.py
 │   ├── n8n/
 │   │     └── My_workflow.json      
 │   ├── open-web-ui/
@@ -110,5 +195,4 @@ Oraculo/
 ├── main.py
 ├── py_requirements.txt                 
 └── README.md     
-
 ```
