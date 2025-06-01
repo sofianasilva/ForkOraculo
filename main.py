@@ -1,5 +1,5 @@
 from src.etl import airbyte 
 
 print("Starting ETL\n")
-""" airbyte.startETL() """
+airbyte.startETL()
 print("\nETL Done\n")
