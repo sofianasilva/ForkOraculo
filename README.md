@@ -13,8 +13,8 @@ Criado para simplificar o processo de gerenciamento de uma equipe.
 
 Antes de começar, certifique-se de que você tem os seguintes requisitos instalados:
 - [Docker](https://www.docker.com/)
-  - Utilizado para subir o banco de dados Postgres, na versão 15.
-- [Python 3.10](https://www.python.org/)
+  - Utilizado para disponibilizar serviços como: o banco de dados Postgres:15, a interface de usuário, Open-web UI e a ferramenta de automatização, n8n.
+- [Python 3.10.17](https://www.python.org/)
   - Utilizar a lib Airbyte para buscar dados do Github
 
 ## Instalação
@@ -22,7 +22,7 @@ Siga estas etapas para configurar o projeto localmente:
 
 1. Gere um token pessoal no [Github](https://github.com) e insira com a chave **GITHUB_TOKEN** no arquivo .env
 
-    - Pode ser gerado [**aqui**](https://github.com/settings/tokens)
+    - Pode ser gerado [**neste link**](https://github.com/settings/tokens)
 
 
 2. Utilize os comandos a seguir para iniciar e parar contêiner com o banco de dados
@@ -34,7 +34,7 @@ Siga estas etapas para configurar o projeto localmente:
 
     Para parar o contêiner:
     ```bash
-      docker compose down -d
+      docker compose down
     ```
 
 3. Inicie um ambiente virtual e ative-o
@@ -61,17 +61,22 @@ Siga estas etapas para configurar o projeto localmente:
 
 4. Instale os requerimentos do projeto com o comando:
     ```bash
-      pip install -r py_requirements.txt
+      pip install --no-cache-dir -r py_requirements.txt
     ```
 
-5. Após sucesso na instalação dos requerimentos, rode o arquivo python principal:
+      Flags usadas:
+      -  **--no-cache-dir**: Desabilita o caching do pip, forçando que baixe todos os requerimentos.
+      -  **-r**: Permite instalar os requerimentos listados em um arquivo .txt
+
+5. Após sucesso na instalação dos requerimentos, rode o arquivo python principal para inicializar o airbyte:
     ```bash
       python main.py
     ```
+    Isso fará com que o airbyte popule o Postgres com os dados do repositório definido no arquivo airbyte.py
 
-    Ou inicie a aplicação FastAPI com:
+6. Inicie a aplicação REST com o FastAPI executando o comando:
     ```bash
-    uvicorn src.app:app --reload
+    uvicorn src.fast_api.app:app --reload
     ```
 
 ## Uso da API
