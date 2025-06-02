@@ -2,7 +2,12 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from database.vanna_client import MyVanna
 from google import genai
-import os
+import os 
+from dotenv import load_dotenv
+
+load_dotenv() # Loads env variables
+
+API_KEY = os.getenv("API_KEY")
 
 router = APIRouter()
 
@@ -21,10 +26,14 @@ async def ask_question(question: Question):
     try:
         sql_gerado = vn.generate_sql(question.question)
         resultado = vn.run_sql(sql_gerado)
-        response = client.models.generate_content(model=os.getenv("MODEL_NAME"),contents="Transforme"+ {"result": resultado} +"em uma frase", config= {
-        "response_mime_type": "application/json",
-        "response_schema": list[Resposta],
-        },)
+        response = client.models.generate_content(
+            model=os.getenv("MODEL_NAME"),
+            contents="Transforme"+ str({"result": resultado}) + "em uma frase",
+            config= {
+                "response_mime_type": "application/json",
+                "response_schema": list[Resposta]
+            }
+        )
         return {"output": response.parsed}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -10,15 +10,15 @@ load_dotenv()
 app = FastAPI()
 
 
-api_key = os.getenv("API_KEY")
+api_key_gem = os.getenv("API_KEY")
 model_name = os.getenv("MODEL_NAME")
 
-client = genai.Client(api_key=api_key)
+client = genai.Client(api_key=api_key_gem)
 
 vn = MyVanna(config={
     'print_prompt': False, 
     'print_sql': False,
-    'api_key': api_key,
+    'api_key': api_key_gem,
     'model_name': model_name
 })
 
@@ -74,10 +74,14 @@ async def ask_question(question: Question):
     try:
         sql_gerado = vn.generate_sql(question.question)
         resultado = vn.run_sql(sql_gerado)
-        response = client.models.generate_content(model=model_name,contents="Transforme"+ str({"result": resultado}) +"em uma frase", config={
-        "response_mime_type": "application/json",
-        "response_schema": list[Resposta],
-        },)
+        response = client.models.generate_content(
+            model=model_name,
+            contents="Transforme"+ str({"result": resultado}) +"em uma frase",
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": list[Resposta],
+                }
+            )
         return {"output": response.parsed}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

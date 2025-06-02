@@ -2,8 +2,13 @@ from vanna.google import GoogleGeminiChat
 from vanna.chromadb import ChromaDB_VectorStore
 from google import genai
 from pydantic import BaseModel
-
+from dotenv import load_dotenv
+import os
 import psycopg2
+
+load_dotenv() # Loads env variables
+
+api_key = os.getenv("API_KEY")
 
 def get_schema(db_url):
     """
@@ -75,18 +80,18 @@ def get_schema(db_url):
 class MyVanna(ChromaDB_VectorStore, GoogleGeminiChat):
     def __init__(self, config=None):
         ChromaDB_VectorStore.__init__(self, config=config)
-        GoogleGeminiChat.__init__(self, config={'api_key': "AIzaSyD9g5yT45LLaHgKR5ixc8Z1rpQPborvMcw", 'model_name': "gemini-2.0-flash"})
+        GoogleGeminiChat.__init__(self, config={'api_key': api_key, 'model_name': "gemini-2.0-flash"})
 
 class Retorno(BaseModel):
     resposta: str
 
 
 def main():
-    client = genai.Client(api_key="AIzaSyD9g5yT45LLaHgKR5ixc8Z1rpQPborvMcw")
+    client = genai.Client(api_key=api_key)
 
     response = client.models.generate_content(
     model="gemini-2.0-flash",
-    contents="escreva um poema para mim",
+    contents="",
     config={
         "response_mime_type": "application/json",
         "response_schema": list[Retorno],
