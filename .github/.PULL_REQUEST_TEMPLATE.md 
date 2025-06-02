@@ -1,0 +1,78 @@
+## 📄 Descrição
+
+Fazendo com que o airbyte complete sua execução no linux. 
+
+Explicitando o contêiner do postgres para usar o modo bridge, assim fazendo com que a url 'host.docker.internal' seja acessível pelo python, mais especificamente src/etl/airbyte.py
+
+> Modificações:
+> - Postgres docker no modo brige
+> - Usabilidade do Airbyte no Linux
+> - Atualização do .env
+> - Refactor do example.env
+> - Atualização do README.md
+
+---
+
+## 🔗 Tarefa(s) Relacionada(s)
+
+- Closes #32
+
+---
+
+## 🚀 Como testar este PR?
+
+### ✅ Passos para executar localmente:
+
+1. Gere um token pessoal no [Github](https://github.com) e insira com a chave **GITHUB_TOKEN** no arquivo .env
+
+    - Pode ser gerado [**neste link**](https://github.com/settings/tokens)
+
+
+2. Utilize os comandos a seguir para iniciar e parar contêiner com o banco de dados
+
+    Para iniciar o contêiner:
+    ```bash
+      docker compose up -d
+    ```
+
+    Para parar o contêiner:
+    ```bash
+      docker compose down
+    ```
+
+3. Inicie um ambiente virtual e ative-o
+
+    Iniciando um ambiente virtual:
+    ```bash
+      python -m venv .venv
+    ```
+
+    Ativando o ambiente virtual, no Linux e MacOS:
+    ```bash
+      source .venv/bin/activate
+    ```
+
+    No Windows Powershell:
+    ```bash
+      .venv\Scripts\Activate.ps1
+    ```
+
+    Desativando o ambiente virtual:
+    ```bash
+      deactivate
+    ```
+
+4. Instale os requerimentos do projeto com o comando:
+    ```bash
+      pip install --no-cache-dir -r py_requirements.txt
+    ```
+
+      Flags usadas:
+      -  **--no-cache-dir**: Desabilita o caching do pip, forçando que baixe todos os requerimentos.
+      -  **-r**: Permite instalar os requerimentos listados em um arquivo .txt
+
+5. Após sucesso na instalação dos requerimentos, rode o arquivo python principal para inicializar o airbyte:
+    ```bash
+      python main.py
+    ```
+    Isso fará com que o airbyte popule o Postgres com os dados do repositório definido no arquivo airbyte.py

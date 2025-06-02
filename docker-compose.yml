@@ -35,6 +35,7 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    network_mode: bridge
 
 volumes:
   n8n_data:
