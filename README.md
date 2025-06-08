@@ -61,7 +61,7 @@ Siga estas etapas para configurar o projeto localmente:
 
 4. Instale os requerimentos do projeto com o comando:
     ```bash
-      pip install --no-cache-dir -r py_requirements.txt
+      pip install --no-cache-dir -r requirements.txt
     ```
 
       Flags usadas:
@@ -198,6 +198,6 @@ Oraculo/
 ├── docker-compose.yml      
 ├── example.env             
 ├── main.py
-├── py_requirements.txt                 
+├── requirements.txt                 
 └── README.md     
 ```
