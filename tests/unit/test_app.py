@@ -12,14 +12,14 @@ def mock_vanna():
     mock_vn.train.return_value = None  
     
     # Patcheia a instância do MyVanna na app
-    with patch('src.fast_api.app.vn', mock_vn):
+    with patch('src.api.app.vn', mock_vn):
         yield mock_vn
 
 
 @pytest.fixture
 def client():
     """Client(Gemini) de teste para a aplicação FastAPI"""
-    with patch('src.fast_api.app.vn.train', return_value=None):
+    with patch('src.api.app.vn.train', return_value=None):
         from src.api.app import app
         return TestClient(app)
 
