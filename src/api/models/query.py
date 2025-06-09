@@ -1,7 +1,1 @@
-from pydantic import BaseModel
-
-class QueryRequest(BaseModel):
-    question: str
-
-class QueryResponse(BaseModel):
-    result: dict
+# TODO: Inserir queries do vanna aqui?
