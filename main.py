@@ -1,4 +1,7 @@
 from src.etl.airbyte import airbyte 
+from src.assets.pattern.singleton import SingletonMeta
+import uvicorn
+from src.assets.aux.flags import flags
 
 # Airbyte 
 
@@ -9,5 +12,10 @@ repos = ["bpthiago/oraculo"]
 # Quais informações deseja trazer do github
 streams = ["issues", "repositories", "pull_requests", "commits", "teams", "users", "issue_milestones", "projects_v2", "team_members", "team_memberships"]
 
+if(flags.etl == True or flags.etl_only == True):
     etl = airbyte(repos, streams)
     etl.start()
+
+    if(flags.etl_only == True):
+        exit(0)
+
