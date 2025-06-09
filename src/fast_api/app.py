@@ -1,34 +1,41 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from src.fast_api.database.vanna_client import MyVanna, get_schema
-import os
-from dotenv import load_dotenv
 from google import genai
+from pydantic import BaseModel
+from src.fast_api.database.vanna_ai import MyVanna, get_schema
+from dotenv import load_dotenv
+from os import getenv
 
 load_dotenv()
 
+# DB env vars
+DB_HOST = getenv("DB_HOST")
+DB_PORT = getenv("DB_PORT")
+DB_NAME = getenv("DB_NAME")
+DB_USER = getenv("DB_USER")
+DB_PASSWORD = getenv("DB_PASSWORD")
+DB_URL = getenv("DB_URL")
+
+# Gemini env vars
+GEMINI_API_KEY = getenv("GEMINI_API_KEY")
+GEMINI_MODEL_NAME = getenv("GEMINI_MODEL_NAME")
+
 app = FastAPI()
 
-
-api_key_gem = os.getenv("API_KEY")
-model_name = os.getenv("MODEL_NAME")
-
-client = genai.Client(api_key=api_key_gem)
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 vn = MyVanna(config={
     'print_prompt': False, 
     'print_sql': False,
-    'api_key': api_key_gem,
-    'model_name': model_name
+    'api_key': GEMINI_API_KEY,
+    'model_name': GEMINI_MODEL_NAME
 })
 
-
 vn.connect_to_postgres(
-    host=os.getenv("DB_HOST"),
-    port=os.getenv("DB_PORT"),
-    dbname=os.getenv("DB_NAME"),
-    user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASSWORD")
+    host = DB_HOST,
+    port = DB_PORT,
+    dbname = DB_NAME,
+    user = DB_USER,
+    password = DB_PASSWORD
 )
 
 schema = get_schema(vn.db_url)
@@ -62,7 +69,6 @@ ORDER BY
 LIMIT 10;
 """)
 
-
 class Question(BaseModel):
     question: str
     
@@ -75,7 +81,7 @@ async def ask_question(question: Question):
         sql_gerado = vn.generate_sql(question.question)
         resultado = vn.run_sql(sql_gerado)
         response = client.models.generate_content(
-            model=model_name,
+            model=GEMINI_MODEL_NAME,
             contents="Transforme"+ str({"result": resultado}) +"em uma frase",
             config={
                 "response_mime_type": "application/json",
