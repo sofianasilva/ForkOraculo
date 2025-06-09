@@ -82,6 +82,7 @@ async def ask_question(question: Question):
                 "response_schema": list[Resposta],
                 }
             )
-        return {"output": response.parsed}
+        texto = response.parsed[0].texto
+        return {"output":texto}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
