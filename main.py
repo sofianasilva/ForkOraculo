@@ -19,3 +19,11 @@ if(flags.etl == True or flags.etl_only == True):
     if(flags.etl_only == True):
         exit(0)
 
+# --- API ---
+
+print("Iniciando API...")
+api_root_path = "src.fast_api.app"
+port = 8000
+config = uvicorn.Config(api_root_path + ":app", port=port, log_level="info", reload=True)
+server = uvicorn.Server(config)
+server.run()
