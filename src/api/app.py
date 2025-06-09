@@ -1,9 +1,9 @@
-from src.fast_api.endpoints.routes import router
+from src.api.endpoints.routes import router
 
 from fastapi import FastAPI, HTTPException
 from google import genai
 
-from src.fast_api.database.MyVanna import MyVanna
+from src.api.database.MyVanna import MyVanna
 
 app = FastAPI()
 

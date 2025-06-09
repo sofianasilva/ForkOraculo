@@ -1,8 +1,8 @@
 from src.assets.pattern.singleton import SingletonMeta
-from src.fast_api.models import Question, Response
+from src.api.models import Question, Response
 
 from google import genai
-from src.fast_api.database.MyVanna import MyVanna
+from src.api.database.MyVanna import MyVanna
 
 from dotenv import load_dotenv
 from os import getenv
