@@ -2,11 +2,6 @@ from fastapi import APIRouter, HTTPException
 from src.api.models import Question, Response
 from src.api.controller.AskController import AskController
 
-import os 
-from dotenv import load_dotenv
-load_dotenv() # Loads env variables
-GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME")
-
 router = APIRouter()
 
 ask = AskController()

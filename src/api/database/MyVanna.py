@@ -6,16 +6,14 @@ from vanna.chromadb import ChromaDB_VectorStore
 import psycopg2
 import os
 
-from dotenv import load_dotenv
-from os import getenv
-load_dotenv()
+from src.assets.aux.env import env
 # DB env vars
-DB_HOST = getenv("DB_HOST")
-DB_PORT = getenv("DB_PORT")
-DB_NAME = getenv("DB_NAME")
-DB_USER = getenv("DB_USER")
-DB_PASSWORD = getenv("DB_PASSWORD")
-DB_URL = getenv("DB_URL")
+DB_HOST = env["DB_HOST"]
+DB_PORT = env["DB_PORT"]
+DB_NAME = env["DB_NAME"]
+DB_USER = env["DB_USER"]
+DB_PASSWORD = env["DB_PASSWORD"]
+DB_URL = env["DB_URL"]
 
 class MyVanna(ChromaDB_VectorStore, GoogleGeminiChat):
     def __init__(self, config=None):

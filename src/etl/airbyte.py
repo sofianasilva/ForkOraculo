@@ -1,21 +1,17 @@
 from src.assets.pattern.singleton import SingletonMeta
 import airbyte as ab
 from airbyte.caches import PostgresCache
-from os import getenv
-from dotenv import load_dotenv
 
-load_dotenv() # Loads env variables
-
-# GitHub personal access token stored securely in environment variable
-GITHUB_TOKEN = getenv("GITHUB_TOKEN")
-GITHUB_REPOS = getenv("GITHUB_REPOS")
-
-DB_HOST = getenv("DB_HOST")
-DB_AB_DESTINATION_HOST = getenv("DB_AB_DESTINATION_HOST")
-DB_PORT = getenv("DB_PORT")
-DB_NAME = getenv("DB_NAME")
-DB_USER = getenv("DB_USER")
-DB_PASSWORD = getenv("DB_PASSWORD")
+from src.assets.aux.env import env
+# GitHub env var
+GITHUB_TOKEN = env["GITHUB_TOKEN"]
+# Db env vars
+DB_HOST = env["DB_HOST"]
+DB_AB_DESTINATION_HOST = env["DB_AB_DESTINATION_HOST"]
+DB_PORT = env["DB_PORT"]
+DB_NAME = env["DB_NAME"]
+DB_USER = env["DB_USER"]
+DB_PASSWORD = env["DB_PASSWORD"]
 
 class airbyte:
     def __init__(self, repos, streams, metaclass=SingletonMeta):
@@ -23,7 +19,6 @@ class airbyte:
         self.streams = streams
 
     def start(self):
-        print("Iniciando processo ETL...")
         # Configure the GitHub source
         source = ab.get_source(
             "source-github",

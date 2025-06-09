@@ -4,12 +4,10 @@ from src.api.models import Question, Response
 from google import genai
 from src.api.database.MyVanna import MyVanna
 
-from dotenv import load_dotenv
-from os import getenv
-load_dotenv()
+from src.assets.aux.env import env
 # Gemini env vars
-GEMINI_API_KEY = getenv("GEMINI_API_KEY")
-GEMINI_MODEL_NAME = getenv("GEMINI_MODEL_NAME")
+GEMINI_API_KEY = env["GEMINI_API_KEY"]
+GEMINI_MODEL_NAME = env["GEMINI_MODEL_NAME"]
 
 class AskController:
     def __init__(self, metaclass=SingletonMeta):
