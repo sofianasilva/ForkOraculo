@@ -10,7 +10,7 @@ import requests
 @pytest.fixture
 def pipe():
     """Fixture que retorna uma instância do Pipe para testes"""
-    from src.open_web_ui.pipeline_api import Pipe
+    from src.assets.open_web_ui.pipeline_api import Pipe
     return Pipe()
 
 

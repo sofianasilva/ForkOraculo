@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 @pytest.fixture
 def mock_psycopg2():
     """Mock para o módulo psycopg2"""
-    with patch('src.fast_api.database.vanna_client.psycopg2') as mock_pg:
+    with patch('src.api.database.vanna_client.psycopg2') as mock_pg:
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
         
@@ -35,8 +35,8 @@ def mock_psycopg2():
 
 @pytest.fixture
 def mock_vanna_classes():
-    with patch('src.fast_api.database.vanna_client.ChromaDB_VectorStore') as mock_chroma, \
-         patch('src.fast_api.database.vanna_client.GoogleGeminiChat') as mock_gemini:
+    with patch('src.api.database.vanna_client.ChromaDB_VectorStore') as mock_chroma, \
+         patch('src.api.database.vanna_client.GoogleGeminiChat') as mock_gemini:
         yield mock_chroma, mock_gemini
 
 
@@ -62,7 +62,7 @@ class TestVannaClient:
         assert vn.print_sql is True
     
     def test_connect_to_postgres(self, mock_psycopg2, mock_vanna_classes):
-        from src.fast_api.database.vanna_client import MyVanna
+        from src.api.database.MyVanna import MyVanna
         
         vn = MyVanna()
         vn.connect_to_postgres(
@@ -72,12 +72,12 @@ class TestVannaClient:
             password='test_pass',
             port='5432'
         )
-        
+        # Não funcionará, coloquei para receber na classe a var DB_URL do env
         assert vn.db_url == 'postgresql://test_user:test_pass@localhost:5432/test_db'
         assert hasattr(vn, 'schema')
 
     def test_run_sql_success(self, mock_psycopg2, mock_vanna_classes):
-        from src.fast_api.database.vanna_client import MyVanna
+        from src.api.database.vanna_client import MyVanna
         
         mock_chroma, mock_gemini = mock_vanna_classes
         
@@ -136,7 +136,7 @@ class TestGetSchema:
         assert "id integer NOT NULL PRIMARY KEY" in schema.replace("    ", "")
     
     def test_get_schema_error(self, mock_psycopg2):
-        from src.fast_api.database.vanna_client import get_schema
+        from src.api.database.vanna_client import get_schema
         
         mock_psycopg2.connect.side_effect = Exception("Erro de conexão")
         

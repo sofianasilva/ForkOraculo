@@ -20,7 +20,7 @@ def mock_vanna():
 def client():
     """Client(Gemini) de teste para a aplicação FastAPI"""
     with patch('src.fast_api.app.vn.train', return_value=None):
-        from src.fast_api.app import app
+        from src.api.app import app
         return TestClient(app)
 
 
