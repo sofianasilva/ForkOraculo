@@ -1,0 +1,20 @@
+from fastapi import APIRouter, HTTPException
+from src.fast_api.models import Question, Response
+from src.fast_api.controller.AskController import AskController
+import os 
+from dotenv import load_dotenv
+
+load_dotenv() # Loads env variables
+
+GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME")
+
+router = APIRouter()
+
+ask = AskController()
+
+@router.post("/ask")
+async def ask_question(question: Question):
+    try:
+        return ask.ask(question)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
