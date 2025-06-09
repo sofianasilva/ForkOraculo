@@ -91,22 +91,13 @@ Uma vez que a aplicação esteja em execução, você pode enviar uma requisiç�
 
 A aplicação retornará o resultado da consulta SQL gerada com base na sua pergunta.
 
-## Uso do n8n e OpenWebUI
+## Uso do OpenWebUI
 
-Para abrir as ferramentas, acesse:
+Para abrir a ferramentas, acesse:
 
-- **n8n**: [http://localhost:5678](http://localhost:5678)  
 - **OpenWebUI**: [http://localhost:3000](http://localhost:3000)
 
-### n8n
-
-Insira no workflow a API do AI Agent.  
-Para obter a API Key, acesse: [https://ai.google.dev/gemini-api/docs/api-key?hl=pt-br](https://ai.google.dev/gemini-api/docs/api-key?hl=pt-br)
-
-### OpenWebUI
-
-Adicione a pipeline como uma nova função e altere o endpoint, utilizando o webhook do n8n.  
-**Atenção**: Substitua `'localhost'` por `'host.docker.internal'` para garantir a comunicação correta entre os containers.
+Adicione a pipeline como uma nova função.
 
 ## Arquitetura e Modularização
 
