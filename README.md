@@ -70,7 +70,7 @@ Siga estas etapas para configurar o projeto localmente:
 
 5. Após sucesso na instalação dos requerimentos, rode o arquivo python principal para inicializar o airbyte:
     ```bash
-      python main.py --etl-only
+      python main.py --etl
     ```
     Isso fará com que o airbyte popule o Postgres com os dados do repositório definido no arquivo airbyte.py e logo após inicialize a api
 
