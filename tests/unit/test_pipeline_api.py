@@ -17,7 +17,7 @@ def pipe():
 @pytest.fixture
 def mock_requests():
     
-    with patch('src.open_web_ui.pipeline_api.requests') as mock_req:
+    with patch('src.assets.open_web_ui.pipeline_api.requests') as mock_req:
         mock_req.RequestException = requests.RequestException
         mock_response = MagicMock()
         mock_response.json.return_value = {"output": "Resposta de teste"}

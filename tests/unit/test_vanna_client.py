@@ -4,6 +4,8 @@ Testes para o cliente Vanna
 import pytest
 from unittest.mock import patch, MagicMock
 
+from vanna.google import GoogleGeminiChat
+from vanna.chromadb import ChromaDB_VectorStore
 
 @pytest.fixture
 def mock_psycopg2():
@@ -72,7 +74,7 @@ class TestVannaClient:
             password='test_pass',
             port='5432'
         )
-        # Não funcionará, coloquei para receber na classe a var DB_URL do env
+
         assert vn.db_url == 'postgresql://test_user:test_pass@localhost:5432/test_db'
         assert hasattr(vn, 'schema')
 
@@ -124,23 +126,47 @@ class TestVannaClient:
         assert isinstance(result, list)
         assert result == []
 
-
 class TestGetSchema:
     def test_get_schema_success(self, mock_psycopg2):
-        from src.api.database.MyVanna import get_schema
+        from src.api.database.MyVanna import MyVanna
         
-        schema = get_schema('postgresql://test_user:test_pass@localhost:5432/test_db')
+        vn = MyVanna(config={
+            'api_key': 'test_key',
+            'model_name': 'gemini-1.5-flash-002'
+        })
+
+        vn.connect_to_postgres(
+            host='localhost',
+            dbname='test_db',
+            user='test_user',
+            password='test_pass',
+            port='5432'
+        )
+        schema = vn.schema
         
         assert "CREATE TABLE issues" in schema
         assert "CREATE TABLE repositories" in schema
         assert "id integer NOT NULL PRIMARY KEY" in schema.replace("    ", "")
     
     def test_get_schema_error(self, mock_psycopg2):
-        from src.api.database.MyVanna import get_schema
+        from src.api.database.MyVanna import MyVanna
         
         mock_psycopg2.connect.side_effect = Exception("Erro de conexão")
         
-        schema = get_schema('postgresql://test_user:test_pass@localhost:5432/test_db')
+        vn = MyVanna(config={
+            'api_key': 'test_key',
+            'model_name': 'gemini-1.5-flash-002'
+        })
+
+        vn.connect_to_postgres(
+            host='localhost',
+            dbname='test_db',
+            user='test_user',
+            password='test_pass',
+            port='5432'
+        )
+
+        schema = vn.get_schema()
         
         assert schema == ""
 
