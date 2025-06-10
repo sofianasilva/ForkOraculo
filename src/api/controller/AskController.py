@@ -9,8 +9,8 @@ from src.assets.aux.env import env
 GEMINI_API_KEY = env["GEMINI_API_KEY"]
 GEMINI_MODEL_NAME = env["GEMINI_MODEL_NAME"]
 
-class AskController:
-    def __init__(self, metaclass=SingletonMeta):
+class AskController(metaclass=SingletonMeta):
+    def __init__(self):
         self.client = genai.Client(api_key=GEMINI_API_KEY)
 
         self.vn = MyVanna(config={
@@ -36,7 +36,7 @@ class AskController:
         resultado = vn.run_sql(sql_gerado)
         response = client.models.generate_content(
             model=GEMINI_MODEL_NAME,
-            contents="Transforme"+ str({"result": resultado}) +"em uma frase",
+            contents="Transforme "+ str({"result": resultado}) +" em uma frase",
             config={
                 "response_mime_type": "application/json",
                 "response_schema": list[Response],
