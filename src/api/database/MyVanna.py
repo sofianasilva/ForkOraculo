@@ -98,8 +98,8 @@ class MyVanna(ChromaDB_VectorStore, GoogleGeminiChat):
             return ""
 
     def connect_to_postgres(self, host, dbname, user, password, port):
-        if not self.db_url:
-            self.db_url = f'postgresql://{user}:{password}@{host}:{port}/{dbname}'
+        
+        self.db_url = f'postgresql://{user}:{password}@{host}:{port}/{dbname}'
         self.schema = self.get_schema()
 
     def run_sql(self, sql):
