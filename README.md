@@ -24,7 +24,6 @@ Siga estas etapas para configurar o projeto localmente:
 
     - Pode ser gerado [**neste link**](https://github.com/settings/tokens)
 
-
 2. Utilize os comandos a seguir para iniciar e parar contêiner com o banco de dados
 
     Para iniciar o contêiner:
@@ -99,7 +98,9 @@ Para abrir a ferramenta, acesse:
 
 ### OpenWebUI
 
-Adicione a pipeline como uma nova função, ela ja está configurada para direcionar as perguntas para a api no backend.
+Adicione a pipeline como uma nova função, importando o arquivo `src/assets/open_web_ui/pipeline_api.json` no painel admin do OpenWebUI. 
+
+A pipeline ja está configurada para direcionar as perguntas para a api no backend.
 
 ## Arquitetura e Modularização
 
