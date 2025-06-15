@@ -12,16 +12,18 @@ load_dotenv()
 
 @pytest.fixture
 def mock_env_vars():
+    """Configura variáveis de ambiente para testes"""
     original_environ = dict(os.environ)
     os.environ.update({
-        'API_KEY': 'test_api_key',
-        'MODEL_NAME': 'test-model',
         'GITHUB_TOKEN': 'test_github_token',
         'DB_HOST': 'localhost',
         'DB_PORT': '5432',
         'DB_NAME': 'test_db',
         'DB_USER': 'test_user',
-        'DB_PASSWORD': 'test_password'
+        'DB_PASSWORD': 'test_password',
+        'DB_URL': 'postgresql://test_user:test_pass@localhost:5432/test_db',
+        'GEMINI_API_KEY': 'test_api_key',
+        'GEMINI_MODEL_NAME': 'test-model'
     })
     yield
     os.environ.clear()

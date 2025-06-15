@@ -13,7 +13,7 @@ Criado para simplificar o processo de gerenciamento de uma equipe.
 
 Antes de começar, certifique-se de que você tem os seguintes requisitos instalados:
 - [Docker](https://www.docker.com/)
-  - Utilizado para disponibilizar serviços como: o banco de dados Postgres:15, a interface de usuário, Open-web UI e a ferramenta de automatização, n8n.
+  - Utilizado para disponibilizar serviços como: o banco de dados Postgres:15 e a interface de usuário, Open-web UI.
 - [Python 3.10.17](https://www.python.org/)
   - Utilizar a lib Airbyte para buscar dados do Github
 
@@ -23,7 +23,6 @@ Siga estas etapas para configurar o projeto localmente:
 1. Gere um token pessoal no [Github](https://github.com) e insira com a chave **GITHUB_TOKEN** no arquivo .env
 
     - Pode ser gerado [**neste link**](https://github.com/settings/tokens)
-
 
 2. Utilize os comandos a seguir para iniciar e parar contêiner com o banco de dados
 
@@ -70,14 +69,14 @@ Siga estas etapas para configurar o projeto localmente:
 
 5. Após sucesso na instalação dos requerimentos, rode o arquivo python principal para inicializar o airbyte:
     ```bash
-      python main.py
+      python main.py --etl
     ```
-    Isso fará com que o airbyte popule o Postgres com os dados do repositório definido no arquivo airbyte.py
+    Isso fará com que o airbyte popule o Postgres com os dados do repositório definido no arquivo airbyte.py e logo após inicialize a api
 
-6. Inicie a aplicação REST com o FastAPI executando o comando:
-    ```bash
-    uvicorn src.fast_api.app:app --reload
-    ```
+      Flags disponíveis:
+      -  **--etl**: Habilita o airbyte, inicia o processo ELT, ao rodar o código.
+      -  **--etl-only**: Programa executará o ETL e terminará a execução.
+      -  Sem flags: Executa somente a API.
 
 ## Uso da API
 
@@ -93,11 +92,15 @@ A aplicação retornará o resultado da consulta SQL gerada com base na sua perg
 
 ## Uso do OpenWebUI
 
-Para abrir a ferramentas, acesse:
+Para abrir a ferramenta, acesse:
 
 - **OpenWebUI**: [http://localhost:3000](http://localhost:3000)
 
-Adicione a pipeline como uma nova função.
+### OpenWebUI
+
+Adicione a pipeline como uma nova função, importando o arquivo `src/assets/open_web_ui/pipeline_api.json` no painel admin do OpenWebUI. 
+
+A pipeline ja está configurada para direcionar as perguntas para a api no backend.
 
 ## Arquitetura e Modularização
 
@@ -120,10 +123,6 @@ O projeto é dividido em módulos bem definidos que seguem uma arquitetura desac
   Interface Web usada para interagir com o usuário final. Permite enviar perguntas e visualizar respostas.  
   Local: `src/open-web-ui/`
 
-- **🔗 n8n (Automação)**  
-  Plataforma de automação que conecta o OpenWebUI ao backend via Webhook. Gerencia a comunicação entre as partes.  
-  Local: `src/n8n/`
-
 ---
 
 ### Visão Geral do Fluxo de Dados
@@ -132,8 +131,6 @@ O projeto é dividido em módulos bem definidos que seguem uma arquitetura desac
 Usuário (interface OpenWebUI)
          ↓
       Webhook
-         ↓
-       n8n (automação)
          ↓
   FastAPI (backend/API)
          ↓
@@ -150,45 +147,66 @@ Usuário (interface OpenWebUI)
 
 | Componente     | Papel              | Descrição                                                                 |
 |----------------|--------------------|---------------------------------------------------------------------------|
-| OpenWebUI      | Interface           | Frontend para o usuário interagir com o sistema                          |
+| OpenWebUI      | Interface           | Frontend para o usuário interagir com o sistema, envia a pergunta diretamente para a api web                          |
 | FastAPI        | Backend/API         | Processa as perguntas e coordena as respostas                            |
-| Airbyte        | ETL                 | Coleta dados externos e injeta no banco de dados                         |
+| Airbyte        | ETL                 | Coleta dados externos do Github e injeta no banco de dados                         |
 | Vanna.AI       | LLM / IA            | Converte perguntas em SQL com base na linguagem natural                  |
-| n8n            | Orquestrador        | Encaminha dados entre frontend, backend e IA usando Webhooks             |
-| Postgres/Chroma| Banco de Dados      | Armazena dados coletados e usados pela IA                                |
+| Postgres/Chromadb | Banco de Dados      | Armazena dados coletados e usados pela IA                                |
 
 
 ## Estrutura de diretórios
 
 ```
 Oraculo/
-├── .github/                 
-├── src/                    
-│   ├── etl/
-│   │     └── airbyte.py             
-│   ├── fastapi/
-│   │    ├── api/
-│   │    │    └── routes.py
-│   │    ├── database/
-│   │    │    └── vanna_client.py
-│   │    ├── models/
-│   │    │    └── query.py
-│   │    ├── app.py
-│   │    ├── chroma.sqlite3
-│   │    └── config.py
-│   ├── n8n/
-│   │     └── My_workflow.json      
-│   ├── open-web-ui/
-│   │     └── pipe-conexaoWebhook.py          
-│   └── vanna/
-│         └── vanna-ai.py                      
+├── .github/
+├── src/
+│   ├── api/
+│   │   ├── controller/
+│   │   │   ├── __init__.py
+│   │   │   └── AskController.py
+│   │   ├── database/
+│   │   │   ├── __init__.py
+│   │   │   └── MyVanna.py
+│   │   ├── endpoints/
+│   │   │   ├── __init__.py
+│   │   │   └── routes.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   └── query.py
+│   │   ├── __init__.py
+│   │   ├── app.py
+│   │   └── config.py
+│   ├── assets/
+│   │   ├── aux/
+│   │   │   ├── __init__.py
+│   │   │   ├── env.py
+│   │   │   └── flags.py
+│   │   ├── open_web_ui/
+│   │   │   ├── __init__.py
+│   │   │   ├── pipeline_api.py
+│   │   │   └── pipeline_api.json
+│   │   └── pattern/
+│   │       ├── __init__.py
+│   │       └── singleton.py
+│   └── etl/
+│       ├── __init__.py
+│       └── airbyte.py
+├── tests/
+│   ├── unit/
+│   │   ├── __init__.py
+│   │   ├── test_app.py
+│   │   ├── test_pipeline_api.py
+│   │   └── test_vanna_client.py
+│   ├── __init__.py
+│   ├── conftest.py
+│   └── README.md
+├── .env
 ├── .gitignore
-├── chroma.sqlite3             
-├── CODE_OF_CONDUCT.md      
-├── CONTRIBUTING.md                             
-├── docker-compose.yml      
-├── example.env             
+├── CODE_OF_CONDUCT.md
+├── CONTRIBUTING.md
+├── README.md
+├── docker-compose.yml
+├── example.env
 ├── main.py
-├── requirements.txt                 
-└── README.md     
+└── requirements.txt 
 ```
