@@ -7,7 +7,6 @@ networks:
     driver: bridge
   oraculo:
 
-
 services:
   db:
     container_name: db-container
@@ -34,6 +33,7 @@ services:
       dockerfile: .docker/back-end/Dockerfile.dev
     volumes:
       - .:/app  # Monta o código local (opcional, para desenvolvimento)
+      - /var/run/docker.sock:/var/run/docker.sock  # Monta o socket do host
     environment:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - DB_HOST=${DB_HOST}
