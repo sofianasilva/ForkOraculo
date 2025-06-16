@@ -66,7 +66,13 @@ class airbyte:
         )
 
         # Write the data to the destination
-        write_result = destination.write(read_result, force_full_refresh=True, cache=cache)
+
+        try:
+            # Código que pode gerar exceções
+            write_result = destination.write(read_result, force_full_refresh=True, cache=cache)
+        finally:
+            # Sempre executado, ocorrendo exceção ou não
+            print("Erro no destination postgres...")
 
         # Output result
         # print(write_result.__dict__)
