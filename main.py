@@ -14,7 +14,11 @@ streams = ["issues", "repositories", "pull_requests", "commits", "teams", "users
 
 if(flags.etl == True or flags.etl_only == True):
     etl = airbyte(repos, streams)
-    etl.start()
+    try:
+        etl.start()
+    except Exception as e:
+        print(f"Ocorreu um erro inesperado: {e}")
+        print("Prosseguindo para inicio da API.")
 
     if(flags.etl_only == True):
         exit(0)
