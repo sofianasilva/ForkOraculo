@@ -20,65 +20,34 @@ Antes de começar, certifique-se de que você tem os seguintes requisitos instal
 ## Instalação
 Siga estas etapas para configurar o projeto localmente:
 
-1. Gere um token pessoal no [Github](https://github.com) e insira com a chave **GITHUB_TOKEN** no arquivo .env
+1. Gere um token pessoal no [Github](https://github.com) e insira a chave na variável **GITHUB_TOKEN** no arquivo `example.env`
 
     - Pode ser gerado [**neste link**](https://github.com/settings/tokens)
 
-2. Utilize os comandos a seguir para iniciar e parar contêiner com o banco de dados
+2. Gere um token pessoal do [Gemini](https://aistudio.google.com/) e insira na variável **GEMINI_API_KEY** no arquivo `example.env`
+
+    - Pode ser gerado [**neste link**](https://aistudio.google.com/app/apikey)
+
+3. Renomeie o arquivo `example.env` para somente `.env`
+
+4. Utilize os comandos a seguir para iniciar os serviços:
 
     Para iniciar o contêiner:
     ```bash
       docker compose up -d
     ```
+5. Utilize os comandos a seguir para parar os contêineres:
 
     Para parar o contêiner:
     ```bash
       docker compose down
     ```
 
-3. Inicie um ambiente virtual e ative-o
-
-    Iniciando um ambiente virtual:
-    ```bash
-      python -m venv .venv
-    ```
-
-    Ativando o ambiente virtual, no Linux e MacOS:
-    ```bash
-      source .venv/bin/activate
-    ```
-
-    No Windows Powershell:
-    ```bash
-      .venv\Scripts\Activate.ps1
-    ```
-
-    Desativando o ambiente virtual:
-    ```bash
-      deactivate
-    ```
-
-4. Instale os requerimentos do projeto com o comando:
-    ```bash
-      pip install --no-cache-dir -r requirements.txt
-    ```
-
-      Flags usadas:
-      -  **--no-cache-dir**: Desabilita o caching do pip, forçando que baixe todos os requerimentos.
-      -  **-r**: Permite instalar os requerimentos listados em um arquivo .txt
-
-5. Após sucesso na instalação dos requerimentos, rode o arquivo python principal para inicializar o airbyte:
-    ```bash
-      python main.py --etl
-    ```
-    Isso fará com que o airbyte popule o Postgres com os dados do repositório definido no arquivo airbyte.py e logo após inicialize a api
-
-      Flags disponíveis:
-      -  **--etl**: Habilita o airbyte, inicia o processo ELT, ao rodar o código.
-      -  **--etl-only**: Programa executará o ETL e terminará a execução.
-      -  Sem flags: Executa somente a API.
-
 ## Uso da API
+
+Para abrir a ferramenta, acesse:
+
+- **Fast API**: [http://localhost:8000](http://localhost:8000)
 
 Uma vez que a aplicação esteja em execução, você pode enviar uma requisição POST para o endpoint `/ask` com um corpo JSON contendo sua pergunta. Por exemplo:
 
@@ -110,18 +79,19 @@ O projeto é dividido em módulos bem definidos que seguem uma arquitetura desac
 
 - **🔁 Airbyte (ETL)**  
   Responsável por extrair dados de fontes externas como o GitHub. Ele coleta essas informações e envia para o banco de dados.
+  Local: `src/etl/`
 
 - **⚙️ Backend (FastAPI)**  
   API desenvolvida em FastAPI, responsável por receber as perguntas, processá-las com ajuda da IA (Vanna.AI), gerar a consulta SQL e retornar a resposta ao usuário.  
-  Local: `src/fastapi/`
+  Local: `src/api/`
 
 - **🧠 Vanna.AI (LLM)**  
   Modelo de linguagem usado para interpretar perguntas em linguagem natural e gerar a SQL correspondente.  
-  Local: `src/vanna/`
+  Local: `src/api/database/`
 
 - **🌐 OpenWebUI (Interface)**  
   Interface Web usada para interagir com o usuário final. Permite enviar perguntas e visualizar respostas.  
-  Local: `src/open-web-ui/`
+  Local: `src/assets/open_web_ui/`
 
 ---
 
@@ -159,6 +129,14 @@ Usuário (interface OpenWebUI)
 ```
 Oraculo/
 ├── .github/
+├── .docker/
+│   ├── back-end/
+│   │   └── Dockerfile
+│   ├── db/
+│   │   ├── Dockerfile
+│   │   └── oraculo_20-06-25.sql
+│   └── front-end/
+│       └── Dockerfile
 ├── src/
 │   ├── api/
 │   │   ├── controller/
