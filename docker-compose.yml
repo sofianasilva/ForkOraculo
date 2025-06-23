@@ -7,11 +7,12 @@ networks:
     driver: bridge
   oraculo:
 
-
 services:
   db:
     container_name: db-container
-    image: postgres:15
+    build:
+      context: .
+      dockerfile: .docker/db/Dockerfile
     restart: always
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -31,9 +32,10 @@ services:
     container_name: py-container
     build: 
       context: .
-      dockerfile: .docker/back-end/Dockerfile.dev
+      dockerfile: .docker/back-end/Dockerfile
     volumes:
       - .:/app  # Monta o código local (opcional, para desenvolvimento)
+      - /var/run/docker.sock:/var/run/docker.sock  # Monta o socket do host
     environment:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - DB_HOST=${DB_HOST}
@@ -45,12 +47,14 @@ services:
       - DB_URL=${DB_URL}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_MODEL_NAME=${GEMINI_MODEL_NAME}
-    command: ["python", "main.py", "--etl"]
+    command: ["python", "main.py"]
+    ports:
+      - 8000:8000
     depends_on:
       - db
     networks:
-      - oraculo
       - open
+      - oraculo
 
   front-end:
     container_name: open-webui-container
@@ -58,11 +62,12 @@ services:
       context: .
       dockerfile: .docker/front-end/Dockerfile
     ports:
-      - "3000:8080"
+      - 3000:8080
     volumes:
       - open_webui_data:/app/backend/data
     restart: unless-stopped
     depends_on:
+      - db
       - back-end
     networks:
       - oraculo
