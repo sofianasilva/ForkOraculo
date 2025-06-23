@@ -32,15 +32,39 @@ class AskController(metaclass=SingletonMeta):
             'model_name': GEMINI_MODEL_NAME
         })
 
-        sql_gerado = vn.generate_sql(question.question)
-        resultado = vn.run_sql(sql_gerado)
-        response = client.models.generate_content(
-            model=GEMINI_MODEL_NAME,
-            contents="Transforme "+ str({"result": resultado}) +" em uma frase",
-            config={
-                "response_mime_type": "application/json",
-                "response_schema": list[Response],
+        try:
+            sql_gerado = vn.generate_sql(question.question)
+
+            if "SELECT" not in sql_gerado.upper():
+                return {"output": "Não consegui entender sua pergunta bem o suficiente para gerar uma resposta SQL válida."}
+
+            resultado = vn.run_sql(sql_gerado)
+
+            if not resultado:
+                return {"output": "A consulta foi feita, mas não há dados correspondentes no banco."}
+
+            # Prompt mais informativo
+            prompt = f"""
+            Você é um assistente que responde perguntas sobre dados extraídos do GitHub.
+
+            Pergunta do usuário: "{question.question}"
+
+            Resultado da consulta SQL: {resultado}
+
+            Gere uma resposta clara e útil para o usuário, explicando o que o resultado significa.
+            """
+
+            response = client.models.generate_content(
+                model=GEMINI_MODEL_NAME,
+                contents=prompt,
+                config={
+                    "response_mime_type": "application/json",
+                    "response_schema": list[Response],
                 }
             )
-        texto = response.parsed[0].texto
-        return {"output":texto}
+
+            texto = response.parsed[0].texto
+            return {"output": texto}
+
+        except Exception as e:
+            return {"output": f"Ocorreu um erro ao processar sua pergunta: {str(e)}"}
