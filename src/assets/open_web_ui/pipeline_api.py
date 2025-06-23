@@ -10,7 +10,7 @@ class Pipe:
         """Configurações editáveis no painel do OpenWebUI."""
 
         api_url: str = Field(
-            default="http://host.docker.internal:8000/ask",
+            default="http://back-end:8000/ask",
             description="Endpoint da API FastAPI que recebe a pergunta (POST).",
         )
         bearer_token: str = Field(
