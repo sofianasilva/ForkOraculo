@@ -1,4 +1,9 @@
+import pandas as pd
 from sqlalchemy import create_engine, text
+import datetime # Para timestamps
+import pytz
+import json
+
 from src.etl.airbyte import airbyte
 from src.assets.pattern.singleton import SingletonMeta
 from src.assets.aux.env import env
@@ -69,6 +74,7 @@ class ETL(metaclass=SingletonMeta):
         self.load_users(transformed_data['users'])
         self.load_repositories(transformed_data['repositories'])
         self.load_milestones(transformed_data['milestones']) # Depende de repositorios
+        self.load_branches(transformed_data['branches']) # Depende de repositórios
     # --- Orquestração da Inserção ---
     def run(self):
         airbyte_cached_data = self.airbyte_extract()            # Extract
@@ -248,6 +254,37 @@ class ETL(metaclass=SingletonMeta):
             print(f"Erro ao inserir repositories: {e}")
 
         print("\n--- Repositories Done ---")
+
+    def load_branches(self, branches_airbyte):
+        print("\n--- Loading Branches ---")
+        if len(branches_airbyte) == 0:
+            print("Nenhum dado de branch no cache do Airbyte.")
+            return
+
+        # print(branches_airbyte)
+
+        try:
+            with self.engine.connect() as connection:
+                for index, branch in enumerate(branches_airbyte):
+                    query = text(f"SELECT id FROM repository WHERE name = :name")
+                    repo_result = connection.execute(query, {'name': branch['repository']}).fetchone()
+                    repository_id = repo_result[0]
+
+                    query = text(f"SELECT id FROM branch WHERE name = :name AND repository_id = :repository_id")
+                    result = connection.execute(query, {'name': branch['branch'], 'repository_id': repository_id}).fetchone()
+
+                    branch_repo = f"{branch['repository']}:{branch['branch']}"
+                    if result:
+                        print(f"Branch '{branch['branch']}' já existe para o repositório {branch['repository']}. ID: {result[0]}")
+                    else:
+                        insert_query = text(f"INSERT INTO branch (name, repository_id) VALUES (:name, :repository_id) RETURNING id")
+                        new_id = connection.execute(insert_query, {'name': branch['branch'], 'repository_id': repository_id}).scalar_one()
+                        print(f"Branch '{branch['branch']}' inserida para repo {branch['repository']} com ID: {new_id}")
+                connection.commit()
+        except Exception as e:
+            print(f"Erro ao inserir branches: {e}")
+
+        print("\n--- Branches Done ---")
 
 
     def load_milestones(self, milestones_airbyte):
