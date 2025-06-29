@@ -10,7 +10,7 @@ from src.assets.aux.flags import flags
 repos = ["bpthiago/oraculo-documentation", "bpthiago/oraculo"]
 
 # Quais informações deseja trazer do github
-streams = ["issues", "repositories", "pull_requests", "commits", "teams", "users", "issue_milestones", "projects_v2", "team_members", "team_memberships"]
+streams = ["issues", "repositories", "pull_requests", "commits", "teams", "users", "issue_milestones", "projects_v2", "team_members", "team_memberships", "assignees", "branches"]
 
 if(flags.etl == True or flags.etl_only == True):
     etl = airbyte(repos, streams)
