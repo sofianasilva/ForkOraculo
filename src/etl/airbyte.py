@@ -2,6 +2,8 @@ from src.assets.pattern.singleton import SingletonMeta
 import airbyte as ab
 from airbyte.caches import PostgresCache
 
+from src.etl.airbyte_db import run_data_insertion
+
 from src.assets.aux.env import env
 # GitHub env var
 GITHUB_TOKEN = env["GITHUB_TOKEN"]
@@ -49,31 +51,6 @@ class airbyte:
         # Read from the source
         read_result = source.read(force_full_refresh=True, cache=cache)
 
-        # Define PostgreSQL as the destination
-        destination = ab.get_destination(
-            "destination-postgres",
-            config={
-                "host": DB_AB_DESTINATION_HOST,
-                "port": int(DB_PORT),
-                "database": DB_NAME,
-                "username": DB_USER,
-                "password": DB_PASSWORD,
-                "schema": "public",
-                "ssl": False,
-                "sslmode": "disable"
-            },
-            docker_image=True
-        )
+        run_data_insertion(read_result);
 
-        # Write the data to the destination
-
-        try:
-            # Código que pode gerar exceções
-            write_result = destination.write(read_result, force_full_refresh=True, cache=cache)
-        finally:
-            # Sempre executado, ocorrendo exceção ou não
-            print("Erro no destination postgres...")
-
-        # Output result
-        # print(write_result.__dict__)
         print("...Fim do processo de ETL")
