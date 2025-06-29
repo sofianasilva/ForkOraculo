@@ -25,3 +25,8 @@ Para executar testes com cobertura de código:
 ```
 pytest --cov=src tests/
 ```
+
+Para executar apenas os testes de qualidade de resposta da IA:
+```
+pytest tests/unit/ai_response_test.py -s -v
+```
