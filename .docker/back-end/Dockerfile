@@ -8,7 +8,7 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 
 # Copia os arquivos do projeto para o contêiner
-COPY . .
+COPY requirements.txt .
 
 # Instala os requerimentos no contêiner
 RUN pip install --no-cache-dir -r requirements.txt
