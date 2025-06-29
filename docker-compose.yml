@@ -39,7 +39,6 @@ services:
     environment:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - DB_HOST=${DB_HOST}
-      - DB_AB_DESTINATION_HOST=${DB_AB_DESTINATION_HOST}
       - DB_PORT=${DB_PORT}
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}

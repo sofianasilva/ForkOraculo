@@ -7,7 +7,6 @@ from src.assets.aux.env import env
 GITHUB_TOKEN = env["GITHUB_TOKEN"]
 # Db env vars
 DB_HOST = env["DB_HOST"]
-DB_AB_DESTINATION_HOST = env["DB_AB_DESTINATION_HOST"]
 DB_PORT = env["DB_PORT"]
 DB_NAME = env["DB_NAME"]
 DB_USER = env["DB_USER"]
