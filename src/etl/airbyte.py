@@ -7,18 +7,18 @@ from src.assets.aux.env import env
 GITHUB_TOKEN = env["GITHUB_TOKEN"]
 # Db env vars
 DB_HOST = env["DB_HOST"]
-DB_AB_DESTINATION_HOST = env["DB_AB_DESTINATION_HOST"]
 DB_PORT = env["DB_PORT"]
 DB_NAME = env["DB_NAME"]
 DB_USER = env["DB_USER"]
 DB_PASSWORD = env["DB_PASSWORD"]
 
 class airbyte:
-    def __init__(self, repos, streams, metaclass=SingletonMeta):
+    def __init__(self, repos, streams, github_token):
         self.repos = repos
         self.streams = streams
+        self.github_token = github_token
 
-    def start(self):
+    def extract(self):
         # Configure the GitHub source
         source = ab.get_source(
             "source-github",
@@ -26,7 +26,7 @@ class airbyte:
             config={
                 "repositories": self.repos,
                 "credentials": {
-                    "personal_access_token": GITHUB_TOKEN,
+                    "personal_access_token": self.github_token,
                 },
             },
         )
@@ -47,33 +47,4 @@ class airbyte:
         )
 
         # Read from the source
-        read_result = source.read(force_full_refresh=True, cache=cache)
-
-        # Define PostgreSQL as the destination
-        destination = ab.get_destination(
-            "destination-postgres",
-            config={
-                "host": DB_AB_DESTINATION_HOST,
-                "port": int(DB_PORT),
-                "database": DB_NAME,
-                "username": DB_USER,
-                "password": DB_PASSWORD,
-                "schema": "public",
-                "ssl": False,
-                "sslmode": "disable"
-            },
-            docker_image=True
-        )
-
-        # Write the data to the destination
-
-        try:
-            # Código que pode gerar exceções
-            write_result = destination.write(read_result, force_full_refresh=True, cache=cache)
-        finally:
-            # Sempre executado, ocorrendo exceção ou não
-            print("Erro no destination postgres...")
-
-        # Output result
-        # print(write_result.__dict__)
-        print("...Fim do processo de ETL")
+        return source.read(force_full_refresh=True, cache=cache)
