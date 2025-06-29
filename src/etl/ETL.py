@@ -66,6 +66,7 @@ class ETL(metaclass=SingletonMeta):
 
         # Ordem de inserção é crucial devido às chaves estrangeiras
         self.load_users(transformed_data['users'])
+        self.load_repositories(transformed_data['repositories'])
     # --- Orquestração da Inserção ---
     def run(self):
         airbyte_cached_data = self.airbyte_extract()            # Extract
@@ -220,3 +221,28 @@ class ETL(metaclass=SingletonMeta):
         except Exception as e:
             print(f"Erro ao inserir users: {e}")
         print("--- Users Done ---")
+
+    def load_repositories(self, repos_airbyte):
+        print("\n--- Loading Repositories ---")
+        if len(repos_airbyte) == 0:
+            print("Nenhum dado de repositório no cache do Airbyte.")
+            return
+
+        # print(repos_airbyte);
+        try:
+            with self.engine.connect() as connection:
+                for index, repo_name in enumerate(repos_airbyte):
+                    query = text(f"SELECT id FROM repository WHERE name = :name")
+                    result = connection.execute(query, {'name': repo_name}).fetchone()
+
+                    if result:
+                        print(f"Repositório '{repo_name}' já existe. ID: {result[0]}")
+                    else:
+                        insert_query = text(f"INSERT INTO repository (name) VALUES (:name) RETURNING id")
+                        new_id = connection.execute(insert_query, {'name': repo_name}).scalar_one()
+                        print(f"Repositório '{repo_name}' inserido com ID: {new_id}")
+                connection.commit()
+        except Exception as e:
+            print(f"Erro ao inserir repositories: {e}")
+
+        print("\n--- Repositories Done ---")
