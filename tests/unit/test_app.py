@@ -22,7 +22,7 @@ def mock_genai():
         mock_response = MagicMock()
         mock_response.parsed = [MagicMock(texto="Resposta processada")]
         mock_client.models.generate_content.return_value = mock_response
-        mock_genai.CLient.return_value = mock_client
+        mock_genai.Client.return_value = mock_client
         yield mock_genai
 
 @pytest.fixture
@@ -56,5 +56,7 @@ class TestFastAPI:
             json={"question": "Pergunta com erro"}
         )
         
-        assert response.status_code == 500
-        assert "detail" in response.json()
+        assert response.status_code == 200
+        assert "output" in response.json()
+        output = response.json()["output"].replace('\xa0', ' ')
+        assert "Ocorreu um erro ao processar sua pergunta: Erro de teste" in output
