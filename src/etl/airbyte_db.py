@@ -29,6 +29,7 @@ engine = create_engine(DATABASE_URL)
 user_id_map = {}
 repo_id_map = {}
 milestone_id_map = {}
+branch_id_map = {}
 # --- Funções para Mapear e Inserir ---
 
 def insert_users(users_airbyte):
@@ -128,11 +129,47 @@ def insert_milestones(milestones_airbyte):
         print(f"Erro ao inserir milestones: {e}")
 
     print("\n--- Milestones Done ---")
+
+def insert_branches(branches_airbyte):
+    print("\n--- Loading Branches ---")
+    if len(branches_airbyte) == 0:
+        print("Nenhum dado de branch no cache do Airbyte.")
+        return
+
+    # print(branches_airbyte)
+
+    try:
+        with engine.connect() as connection:
+            for index, branch in enumerate(branches_airbyte):
+                query = text(f"SELECT id FROM repository WHERE name = :name")
+                repo_result = connection.execute(query, {'name': branch['repository']}).fetchone()
+                repository_id = repo_result[0]
+
+                query = text(f"SELECT id FROM branch WHERE name = :name AND repository_id = :repository_id")
+                result = connection.execute(query, {'name': branch['branch'], 'repository_id': repository_id}).fetchone()
+
+                branch_repo = f"{branch['repository']}:{branch['branch']}"
+                if result:
+                    branch_id_map[branch_repo] = result[0]
+                    print(f"Branch '{branch['branch']}' já existe para o repositório {branch['repository']}. ID: {result[0]}")
+                else:
+                    insert_query = text(f"INSERT INTO branch (name, repository_id) VALUES (:name, :repository_id) RETURNING id")
+                    new_id = connection.execute(insert_query, {'name': branch['branch'], 'repository_id': repository_id}).scalar_one()
+                    branch_id_map[new_id] = branch_repo
+                    print(f"Branch '{branch['branch']}' inserida para repo {branch['repository']} com ID: {new_id}")
+            connection.commit()
+    except Exception as e:
+        print(f"Erro ao inserir branches: {e}")
+
+    print("\n--- Branches Done ---")
+
 def data_transform(read_result):
     print("\n--- Data Transform Initiated---")
     added_user_logins = []
     users = []
     repositories = []
+    branches = []
+    added_repo_branches = []
     milestones = []
     for stream_name, dataset in read_result.streams.items():
         for i, record in enumerate(dataset):
@@ -154,6 +191,21 @@ def data_transform(read_result):
                 # print(f"  Record {i+1}: repo: {repo}") # Imprime toda vez q encontra um repositório
                 if(repo not in repositories):
                     repositories.append(repo)
+            
+            ## Populando branches em todas as streams
+            if(getattr(record, 'branch', False) != False):
+                branch = record.branch
+                # print(f"  Record {i+1}: branch: {record}") # Imprime toda vez q encontra um branch
+                repository = record.repository.lower()
+                branch = record.branch.lower()
+                repo_branch = f"{repository}:{branch}"
+                if(repo_branch not in added_repo_branches):
+                    branches.append({
+                        "repository": repository,
+                        "branch": branch
+                    })
+                    added_repo_branches.append(repo_branch)
+                    
             ## Populando milestones em todas as streams
             if (stream_name.lower() == 'issue_milestones'):
                 # print(f"    milestone {i+1}: id: {record.id}, title: {record.title}, body: {record.description}, number: {record.number}, state: {record.state}, created_at: {record.created_at}, updated_at: {record.updated_at}, creator: {record.creator['id']}") # Imprime toda vez q encontra usuario
@@ -176,6 +228,7 @@ def data_transform(read_result):
     return {
         "users": users,
         "repositories": repositories,
+        "branches": branches,
         "milestones": milestones,
 
 def handlingTimeZoneToPostgres(naive_datetime):
@@ -198,12 +251,15 @@ def run_data_insertion(read_result):
     # print(cached_airbyte_data['users'])
     # print("\nRepos")
     # print(cached_airbyte_data['repositories'])
+    # print("\nBranches")
+    # print(cached_airbyte_data['branches'])
     # print("\nMilestones")
     # print(cached_airbyte_data['milestones'])
     # Ordem de inserção é crucial devido às chaves estrangeiras
     insert_users(cached_airbyte_data['users'])
     insert_repositories(cached_airbyte_data['repositories'])
     insert_milestones(cached_airbyte_data['milestones']) # Depende de repositorios
+    insert_branches(cached_airbyte_data['branches']) # Depende de repositórios
 
 # --- Execução ---
 if __name__ == "__main__":
