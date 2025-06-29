@@ -47,7 +47,7 @@ services:
       - DB_URL=${DB_URL}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_MODEL_NAME=${GEMINI_MODEL_NAME}
-    command: ["python", "main.py"]
+    command: ["python", "main.py", "--etl"]
     ports:
       - 8000:8000
     depends_on:
