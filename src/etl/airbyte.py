@@ -2,8 +2,6 @@ from src.assets.pattern.singleton import SingletonMeta
 import airbyte as ab
 from airbyte.caches import PostgresCache
 
-from src.etl.airbyte_db import run_data_insertion
-
 from src.assets.aux.env import env
 # GitHub env var
 GITHUB_TOKEN = env["GITHUB_TOKEN"]
@@ -16,11 +14,12 @@ DB_USER = env["DB_USER"]
 DB_PASSWORD = env["DB_PASSWORD"]
 
 class airbyte:
-    def __init__(self, repos, streams, metaclass=SingletonMeta):
+    def __init__(self, repos, streams, github_token):
         self.repos = repos
         self.streams = streams
+        self.github_token = github_token
 
-    def start(self):
+    def extract(self):
         # Configure the GitHub source
         source = ab.get_source(
             "source-github",
@@ -28,7 +27,7 @@ class airbyte:
             config={
                 "repositories": self.repos,
                 "credentials": {
-                    "personal_access_token": GITHUB_TOKEN,
+                    "personal_access_token": self.github_token,
                 },
             },
         )
@@ -49,8 +48,4 @@ class airbyte:
         )
 
         # Read from the source
-        read_result = source.read(force_full_refresh=True, cache=cache)
-
-        run_data_insertion(read_result);
-
-        print("...Fim do processo de ETL")
+        return source.read(force_full_refresh=True, cache=cache)
