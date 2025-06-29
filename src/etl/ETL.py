@@ -75,6 +75,7 @@ class ETL(metaclass=SingletonMeta):
         self.load_repositories(transformed_data['repositories'])
         self.load_milestones(transformed_data['milestones']) # Depende de repositorios
         self.load_branches(transformed_data['branches']) # Depende de repositórios
+        self.load_issues(transformed_data['issues'])
     # --- Orquestração da Inserção ---
     def run(self):
         airbyte_cached_data = self.airbyte_extract()            # Extract
@@ -322,6 +323,58 @@ class ETL(metaclass=SingletonMeta):
             print(f"Erro ao inserir milestones: {e}")
 
         print("\n--- Milestones Done ---")
+
+    def load_issues(self, issues_airbyte):
+        print("\n--- Loading Issues ---")
+        if len(issues_airbyte) == 0:
+            print("Nenhum dado de issue no cache do Airbyte.")
+            return
+
+        # print(issues_airbyte[0])
+
+        try:
+            with self.engine.connect() as connection:
+                for index, issue in enumerate(issues_airbyte):
+                    # Preparativos para inserir
+                    query = text(f"SELECT id FROM issue WHERE id = :id")
+                    result = connection.execute(query, {'id': issue['id']}).fetchone()
+
+                    if result:
+                        print(f"Issue '{issue['title']}' já existe. ID: {result[0]}")
+                    else:
+                        # Resolvendo id repo
+                        query = text(f"SELECT id FROM repository WHERE name = :name")
+                        repo_id_result = connection.execute(query, {'name': issue['repository']}).fetchone()
+                        repository_id = repo_id_result[0];
+
+                        # Se existe milestone vinculada
+                        milestone_id = None
+                        if(issue['milestone']):
+                            # print("issue milestone id: ", issue['milestone']['id'])
+                            milestone_id = issue['milestone']['id']
+
+                        # Inserindo SaoPaulo TIMEZONE
+                        issue['created_at'] = self.handlingTimeZoneToPostgres(issue['created_at'])
+                        issue['updated_at'] = self.handlingTimeZoneToPostgres(issue['updated_at'])
+
+                        insert_query = text(f"INSERT INTO issue (id, title, body, number, html_url, created_at, updated_at, created_by, repository_id, milestone_id) VALUES (:id, :title, :body, :number, :html_url, :created_at, :updated_at, :created_by, :repository_id, :milestone_id) RETURNING id")
+
+                        new_issue_id = connection.execute(insert_query, {'id': issue['id'], 'title': issue['title'], 'body': issue['body'], 'number': issue['number'], 'html_url': issue['html_url'], 'created_at': issue['created_at'], 'updated_at': issue['updated_at'], 'created_by': issue['created_by'], 'repository_id': repository_id, 'milestone_id': milestone_id}).scalar_one()
+                        print(f"Issue '{issue['title']}' inserida com ID: {new_issue_id}")
+
+                        # 
+                        if(issue['assignees']):
+                            for assignee in issue['assignees']:
+                                # print(f"Row: issue_id: {issue['id']}; ass: {assignee['id']}")
+                                insert_query = text(f"INSERT INTO issue_assignees (issue_id, user_id) VALUES (:issue_id, :user_id)")
+                                connection.execute(insert_query, {'issue_id': issue['id'], 'user_id': assignee['id']})
+                                print(f"Assignee '{assignee['login']}' adicionado.")
+                        
+                connection.commit()
+        except Exception as e:
+            print(f"Erro ao inserir issues: {e}")
+
+        print("\n--- Issues Done ---")
 
     def handlingTimeZoneToPostgres(self, naive_datetime):
         # Definir o fuso horário brasileiro de São Paulo
