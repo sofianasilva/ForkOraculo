@@ -32,6 +32,8 @@ milestone_id_map = {}
 branch_id_map = {}
 issue_id_map = {}
 pr_id_map = {}
+commit_id_map = {}
+
 # --- Funções para Mapear e Inserir ---
 
 def insert_users(users_airbyte):
@@ -272,6 +274,59 @@ def insert_branches(branches_airbyte):
 
     print("\n--- Branches Done ---")
 
+def insert_commits(commits_airbyte):
+    print("\n--- Loading Commits ---")
+    if len(commits_airbyte) == 0:
+        print("Nenhum dado de commit no cache do Airbyte.")
+        return
+
+    # print(commits_airbyte[0])
+
+    try:
+        with engine.connect() as connection:
+            for index, commit in enumerate(commits_airbyte):
+                query = text(f"SELECT id FROM repository WHERE name = :name")
+                repo_result = connection.execute(query, {'name': commit['repository']}).fetchone()
+                repository_id = repo_result[0]
+
+                query = text(f"SELECT id FROM commits WHERE sha = :sha AND repository_id = :repository_id")
+                result = connection.execute(query, {'sha': commit['sha'], 'repository_id': repository_id}).fetchone()
+
+                if result:
+                    commit_id_map[result[0]] = commit['sha']
+                    print(f"Commit '{commit['sha']}' já existe para repo {commit['repository']}. ID: {result[0]}")
+                else:
+                    query = text(f"SELECT id FROM branch WHERE name = :name AND repository_id = :repository_id")
+                    result = connection.execute(query, {'name': commit['branch'], 'repository_id': repository_id}).fetchone()
+                    branch_id = result[0]
+
+                    # Inserindo SaoPaulo TIMEZONE
+                    commit['created_at'] = handlingTimeZoneToPostgres(commit['created_at'])
+
+                    insert_query = text(f"""
+                        INSERT INTO commits (user_id, branch_id, repository_id, created_at, message, sha, html_url)
+                        VALUES (:user_id, :branch_id, :repository_id, :created_at, :message, :sha, :html_url)
+                        RETURNING id
+                    """)
+                    new_commit_id = connection.execute(insert_query, {
+                        'user_id': commit['user_id'], 'branch_id': branch_id, 'repository_id': repository_id,
+                        'created_at': commit['created_at'], 'message': commit['message'], 'sha': commit['sha'], 'html_url': commit['html_url']
+                    }).scalar_one()
+                    commit_id_map[new_commit_id] = commit['sha']
+                    print(f"Commit '{commit['sha']}' inserido para repo {commit['repository']} com ID: {new_commit_id}")
+
+                    if(len(commit['parents']) > 0):
+                        for parent in commit['parents']:
+                            insert_query = text(f"INSERT INTO parents_commits (parent_sha, commit_id) VALUES (:parent_sha, :commit_id)")
+                            connection.execute(insert_query, {'parent_sha': parent['sha'], 'commit_id': new_commit_id})
+                            print(f"Commit '{parent['sha']}' parent do commit '{commit['sha']}' adicionado.")
+
+            connection.commit()
+    except Exception as e:
+        print(f"Erro ao inserir commits: {e}")
+
+    print("\n--- Commits Done ---")
+
 def data_transform(read_result):
     print("\n--- Data Transform Initiated---")
     added_user_logins = []
@@ -282,6 +337,7 @@ def data_transform(read_result):
     milestones = []
     issues = []
     pull_requests = []
+    commits = []
     for stream_name, dataset in read_result.streams.items():
         for i, record in enumerate(dataset):
             ## Populando usuários em todas as streams
@@ -339,6 +395,33 @@ def data_transform(read_result):
                 pull_requests.append({
                     "id": record.id, "created_by": record.user['id'], "repository": record.repository.lower(), "number": record.number, "state": record.state, "title": record.title, "body": record.body, "html_url": record.html_url, "created_at": record.created_at, "updated_at": record.updated_at, "merged_at": record.merged_at, "milestone": record.milestone, "assignees": record.assignees 
                 })
+
+            # Se a stream for commits
+            if (stream_name.lower() == 'commits'):
+                # print(f"    commit {i+1}: {record}") # Imprime toda vez q encontra usuario
+                # print(f"    commit {i+1}: author: {record.author}") # Imprime toda vez q encontra usuario
+                # if(i > 10 and i < 13):
+                #     print(f"    commit {i+1}: author: {record.author}") # Imprime toda vez q encontra usuario
+                    
+                # print(f"    commit {i+1}: author: {record.author['id']} login: {record.author['login']}") # Imprime toda vez q encontra usuario
+
+                # caso nao tenha author no commit, ele será ignorado.
+                # possivelmente problemas de vinculo email no commit -> email cadastrado no github
+                commitHasAuthor = getattr(record, 'author', False)
+                if(commitHasAuthor != False and commitHasAuthor != None):
+                    user_login = record.author['login'].lower()
+                    if(user_login not in added_user_logins):
+                        users.append({
+                            "id": record.author['id'],
+                            "login": user_login,
+                            "html_url": record.author['html_url']
+                        })
+                        added_user_logins.append(user_login)
+
+                    commits.append({
+                        "user_id": record.author['id'], "repository": record.repository.lower(), "branch": record.branch.lower(), "created_at": record.created_at, "message": record.commit['message'], "sha": record.sha, "parents": record.parents, "html_url": record.html_url 
+                    })
+            
             # Se a stream for assginees, adiciona mais usuarios, se possível
             if (stream_name.lower() == 'assignees'):
                 # print(f"    assignee {i+1}: id: {record.id}, login: {record.login}, html_url: {record.html_url}") # Imprime toda vez q encontra usuario
@@ -351,6 +434,7 @@ def data_transform(read_result):
                     })
                     added_user_logins.append(user_login)
     print("--- Data Transform Completed ---")
+
     return {
         "users": users,
         "repositories": repositories,
@@ -358,6 +442,8 @@ def data_transform(read_result):
         "milestones": milestones,
         "issues": issues,
         "pull_requests": pull_requests,
+        "commits": commits
+    } 
 
 def handlingTimeZoneToPostgres(naive_datetime):
     # Definir o fuso horário brasileiro de São Paulo
@@ -387,6 +473,9 @@ def run_data_insertion(read_result):
     # print(cached_airbyte_data['issues'][0])
     # print("\nPull requests")
     # print(cached_airbyte_data['pull_requests'][0])
+    # print("\ncommits")
+    # print(cached_airbyte_data['commits'][0])
+
     # Ordem de inserção é crucial devido às chaves estrangeiras
     insert_users(cached_airbyte_data['users'])
     insert_repositories(cached_airbyte_data['repositories'])
@@ -394,6 +483,7 @@ def run_data_insertion(read_result):
     insert_branches(cached_airbyte_data['branches']) # Depende de repositórios
     insert_issues(cached_airbyte_data['issues'])
     insert_pull_requests(cached_airbyte_data['pull_requests'])
+    insert_commits(cached_airbyte_data['commits'])
 
 # --- Execução ---
 if __name__ == "__main__":
