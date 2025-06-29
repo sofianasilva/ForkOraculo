@@ -34,7 +34,7 @@ class TestPipeClass:
         assert pipe.type == "pipe"
         assert pipe.id == "fastapi_pipe"
         assert pipe.name == "FastAPI Pipe"
-        assert pipe.valves.api_url == "http://host.docker.internal:8000/ask"
+        assert pipe.valves.api_url == "http://back-end:8000/ask"
         assert pipe.valves.bearer_token == ""
         assert pipe.valves.emit_interval == 2.0
         assert pipe.valves.enable_status_indicator is True
