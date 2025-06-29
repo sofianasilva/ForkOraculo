@@ -77,6 +77,8 @@ class ETL(metaclass=SingletonMeta):
         self.load_branches(transformed_data['branches']) # Depende de repositórios
         self.load_issues(transformed_data['issues'])
         self.load_pull_requests(transformed_data['pull_requests'])
+        self.load_commits(transformed_data['commits'])
+
     # --- Orquestração da Inserção ---
     def run(self):
         airbyte_cached_data = self.airbyte_extract()            # Extract
@@ -428,6 +430,59 @@ class ETL(metaclass=SingletonMeta):
             print(f"Erro ao inserir issues: {e}")
 
         print("\n--- Pull Requests Done ---")
+
+    def load_commits(self, commits_airbyte):
+        print("\n--- Loading Commits ---")
+        if len(commits_airbyte) == 0:
+            print("Nenhum dado de commit no cache do Airbyte.")
+            return
+
+        # print(commits_airbyte[0])
+
+        try:
+            with self.engine.connect() as connection:
+                for index, commit in enumerate(commits_airbyte):
+                    query = text(f"SELECT id FROM repository WHERE name = :name")
+                    repo_result = connection.execute(query, {'name': commit['repository']}).fetchone()
+                    repository_id = repo_result[0]
+
+                    query = text(f"SELECT id FROM commits WHERE sha = :sha AND repository_id = :repository_id")
+                    result = connection.execute(query, {'sha': commit['sha'], 'repository_id': repository_id}).fetchone()
+
+                    if result:
+                        print(f"Commit '{commit['sha']}' já existe para repo {commit['repository']}. ID: {result[0]}")
+                    else:
+                        query = text(f"SELECT id FROM branch WHERE name = :name AND repository_id = :repository_id")
+                        result = connection.execute(query, {'name': commit['branch'], 'repository_id': repository_id}).fetchone()
+                        branch_id = result[0]
+
+                        # Inserindo SaoPaulo TIMEZONE
+                        commit['created_at'] = self.handlingTimeZoneToPostgres(commit['created_at'])
+
+                        insert_query = text(f"""
+                            INSERT INTO commits (user_id, branch_id, repository_id, created_at, message, sha, html_url)
+                            VALUES (:user_id, :branch_id, :repository_id, :created_at, :message, :sha, :html_url)
+                            RETURNING id
+                        """)
+                        new_commit_id = connection.execute(insert_query, {
+                            'user_id': commit['user_id'], 'branch_id': branch_id, 'repository_id': repository_id,
+                            'created_at': commit['created_at'], 'message': commit['message'], 'sha': commit['sha'], 'html_url': commit['html_url']
+                        }).scalar_one()
+                        print(f"Commit '{commit['sha']}' inserido para repo {commit['repository']} com ID: {new_commit_id}")
+
+                        if(len(commit['parents']) > 0):
+                            for parent in commit['parents']:
+                                insert_query = text(f"INSERT INTO parents_commits (parent_sha, commit_id) VALUES (:parent_sha, :commit_id)")
+                                connection.execute(insert_query, {'parent_sha': parent['sha'], 'commit_id': new_commit_id})
+                                print(f"Commit '{parent['sha']}' parent do commit '{commit['sha']}' adicionado.")
+
+                connection.commit()
+        except Exception as e:
+            print(f"Erro ao inserir commits: {e}")
+
+        print("\n--- Commits Done ---")
+
+
     def handlingTimeZoneToPostgres(self, naive_datetime):
         # Definir o fuso horário brasileiro de São Paulo
         brazil_tz = pytz.timezone('America/Sao_Paulo')
