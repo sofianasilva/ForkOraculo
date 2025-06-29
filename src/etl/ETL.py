@@ -48,10 +48,29 @@ class ETL(metaclass=SingletonMeta):
             print(f"Ocorreu um erro na execução do airbyte: {e}")
             return None
 
+    def load_data(self, transformed_data):
+        # print("\nUsers")
+        # print(transformed_data['users'])
+        # print("\nRepos")
+        # print(transformed_data['repositories'])
+        # print("\nBranches")
+        # print(transformed_data['branches'])
+        # print("\nMilestones")
+        # print(transformed_data['milestones'])
+        # print("\nissues")
+        # print(transformed_data['issues'][0])
+        # print("\nPull requests")
+        # print(transformed_data['pull_requests'][0])
+        # print("\ncommits")
+        # print(transformed_data['commits'][0])
+
+        # Ordem de inserção é crucial devido às chaves estrangeiras
+        self.load_users(transformed_data['users'])
     # --- Orquestração da Inserção ---
     def run(self):
         airbyte_cached_data = self.airbyte_extract()            # Extract
         transformed_data = self.data_transform(airbyte_cached_data)  # Transform
+        self.load_data(transformed_data)                             # Load
 
     def data_transform(self, read_result):
         print("\n--- Data Transform Initiated---")
@@ -170,3 +189,34 @@ class ETL(metaclass=SingletonMeta):
             "commits": commits
         } 
 
+    # --- Inserindo Usuários ---
+    def load_users(self,users_airbyte):
+        print("\n--- Loading Users ---")
+        if len(users_airbyte) == 0:
+            print("Nenhum dado de usuário no cache do Airbyte.")
+            return
+
+        # print(users_airbyte)
+
+        try:
+            # Tenta inserir. Se 'id' for PK e já existir, vai dar erro.
+            # O ideal é um UPSERT. Aqui, vamos simular um insert ignorando duplicatas ou um UPSERT.
+            with self.engine.connect() as connection:
+                for index, user in enumerate(users_airbyte):
+                    # Verifica se o usuário já existe pelo airbyte_id (se você mantiver essa coluna no seu DB)
+                    # Ou pelo 'login' se 'login' for UNIQUE
+                    
+                    query = text(f"SELECT id FROM \"user\" WHERE id = :id") # usar "user" por ser palavra reservada
+                    result = connection.execute(query, {'id': user['id']}).fetchone()
+
+                    if result:
+                        print(f"Usuário '{user['login']}' já existe. ID: {result[0]}")
+                    else:
+                        insert_query = text(f"INSERT INTO \"user\" (id, login, html_url) VALUES (:id, :login, :html_url) RETURNING id")
+                        new_id = connection.execute(insert_query, {'id': user['id'], 'login': user['login'], 'html_url': user['html_url']}).scalar_one()
+                        print(f"Usuário '{user['login']}' inserido com ID: {new_id}")
+                connection.commit() # Commit das operações
+
+        except Exception as e:
+            print(f"Erro ao inserir users: {e}")
+        print("--- Users Done ---")
