@@ -30,6 +30,7 @@ user_id_map = {}
 repo_id_map = {}
 milestone_id_map = {}
 branch_id_map = {}
+issue_id_map = {}
 # --- Funções para Mapear e Inserir ---
 
 def insert_users(users_airbyte):
@@ -130,6 +131,59 @@ def insert_milestones(milestones_airbyte):
 
     print("\n--- Milestones Done ---")
 
+def insert_issues(issues_airbyte):
+    print("\n--- Loading Issues ---")
+    if len(issues_airbyte) == 0:
+        print("Nenhum dado de issue no cache do Airbyte.")
+        return
+
+    # print(issues_airbyte[0])
+
+    try:
+        with engine.connect() as connection:
+            for index, issue in enumerate(issues_airbyte):
+                # Preparativos para inserir
+                query = text(f"SELECT id FROM issue WHERE id = :id")
+                result = connection.execute(query, {'id': issue['id']}).fetchone()
+
+                if result:
+                    issue_id_map[issue['id']] = result[0]
+                    print(f"Issue '{issue['title']}' já existe. ID: {result[0]}")
+                else:
+                    # Resolvendo id repo
+                    query = text(f"SELECT id FROM repository WHERE name = :name")
+                    repo_id_result = connection.execute(query, {'name': issue['repository']}).fetchone()
+                    repository_id = repo_id_result[0];
+
+                    # Se existe milestone vinculada
+                    milestone_id = None
+                    if(issue['milestone']):
+                        # print("issue milestone id: ", issue['milestone']['id'])
+                        milestone_id = issue['milestone']['id']
+
+                    # Inserindo SaoPaulo TIMEZONE
+                    issue['created_at'] = handlingTimeZoneToPostgres(issue['created_at'])
+                    issue['updated_at'] = handlingTimeZoneToPostgres(issue['updated_at'])
+
+                    insert_query = text(f"INSERT INTO issue (id, title, body, number, html_url, created_at, updated_at, created_by, repository_id, milestone_id) VALUES (:id, :title, :body, :number, :html_url, :created_at, :updated_at, :created_by, :repository_id, :milestone_id) RETURNING id")
+
+                    new_issue_id = connection.execute(insert_query, {'id': issue['id'], 'title': issue['title'], 'body': issue['body'], 'number': issue['number'], 'html_url': issue['html_url'], 'created_at': issue['created_at'], 'updated_at': issue['updated_at'], 'created_by': issue['created_by'], 'repository_id': repository_id, 'milestone_id': milestone_id}).scalar_one()
+                    issue_id_map[issue['id']] = new_issue_id
+                    print(f"Issue '{issue['title']}' inserida com ID: {new_issue_id}")
+
+                    if(issue['assignees']):
+                        for assignee in issue['assignees']:
+                            # print(f"Row: issue_id: {issue['id']}; ass: {assignee['id']}")
+                            insert_query = text(f"INSERT INTO issue_assignees (issue_id, user_id) VALUES (:issue_id, :user_id)")
+                            connection.execute(insert_query, {'issue_id': issue['id'], 'user_id': assignee['id']})
+                            print(f"Assignee '{assignee['login']}' adicionado.")
+                    
+            connection.commit()
+    except Exception as e:
+        print(f"Erro ao inserir issues: {e}")
+
+    print("\n--- Issues Done ---")
+
 def insert_branches(branches_airbyte):
     print("\n--- Loading Branches ---")
     if len(branches_airbyte) == 0:
@@ -171,6 +225,7 @@ def data_transform(read_result):
     branches = []
     added_repo_branches = []
     milestones = []
+    issues = []
     for stream_name, dataset in read_result.streams.items():
         for i, record in enumerate(dataset):
             ## Populando usuários em todas as streams
@@ -213,6 +268,14 @@ def data_transform(read_result):
                 milestones.append({
                     "id": record.id, "repository": record.repository.lower(), "title": record.title, "description": record.description, "number": record.number, "state": record.state, "created_at": record.created_at, "updated_at": record.updated_at, "creator": record.creator['id']
                 })
+
+            # Se a stream for issues
+            if (stream_name.lower() == 'issues'):
+                # print(f"    issue {i+1}: {record}") # Imprime toda vez q encontra usuario
+
+                issues.append({
+                    "id": record.id, "title": record.title, "body": record.body, "number": record.number, "html_url": record.html_url, "created_at": record.created_at, "updated_at": record.updated_at, "assignees": record.assignees, "created_by": record.user['id'], "repository": record.repository.lower(), "milestone": record.milestone 
+                })
             # Se a stream for assginees, adiciona mais usuarios, se possível
             if (stream_name.lower() == 'assignees'):
                 # print(f"    assignee {i+1}: id: {record.id}, login: {record.login}, html_url: {record.html_url}") # Imprime toda vez q encontra usuario
@@ -230,6 +293,7 @@ def data_transform(read_result):
         "repositories": repositories,
         "branches": branches,
         "milestones": milestones,
+        "issues": issues,
 
 def handlingTimeZoneToPostgres(naive_datetime):
     # Definir o fuso horário brasileiro de São Paulo
@@ -255,11 +319,14 @@ def run_data_insertion(read_result):
     # print(cached_airbyte_data['branches'])
     # print("\nMilestones")
     # print(cached_airbyte_data['milestones'])
+    # print("\nissues")
+    # print(cached_airbyte_data['issues'][0])
     # Ordem de inserção é crucial devido às chaves estrangeiras
     insert_users(cached_airbyte_data['users'])
     insert_repositories(cached_airbyte_data['repositories'])
     insert_milestones(cached_airbyte_data['milestones']) # Depende de repositorios
     insert_branches(cached_airbyte_data['branches']) # Depende de repositórios
+    insert_issues(cached_airbyte_data['issues'])
 
 # --- Execução ---
 if __name__ == "__main__":
