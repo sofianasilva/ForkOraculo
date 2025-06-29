@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine, text
+from src.etl.airbyte import airbyte
 from src.assets.pattern.singleton import SingletonMeta
 from src.assets.aux.env import env
 # GitHub env var
@@ -67,6 +68,7 @@ class ETL(metaclass=SingletonMeta):
         # Ordem de inserção é crucial devido às chaves estrangeiras
         self.load_users(transformed_data['users'])
         self.load_repositories(transformed_data['repositories'])
+        self.load_milestones(transformed_data['milestones']) # Depende de repositorios
     # --- Orquestração da Inserção ---
     def run(self):
         airbyte_cached_data = self.airbyte_extract()            # Extract
@@ -246,3 +248,51 @@ class ETL(metaclass=SingletonMeta):
             print(f"Erro ao inserir repositories: {e}")
 
         print("\n--- Repositories Done ---")
+
+
+    def load_milestones(self, milestones_airbyte):
+        print("\n--- Loading Milestones ---")
+        if len(milestones_airbyte) == 0:
+            print("Nenhum dado de repositório no cache do Airbyte.")
+            return
+
+        # print(milestones_airbyte);
+        # print('\n')
+
+        try:
+            with self.engine.connect() as connection:
+                for index, milestone in enumerate(milestones_airbyte):
+                    query = text(f"SELECT id FROM milestone WHERE id = :id")
+                    result = connection.execute(query, {'id': milestone['id']}).fetchone()
+
+                    if result:
+                        print(f"Milestone '{milestone['title']}' já existe. ID: {result[0]}")
+                    else:
+                        # Resolvendo id repo
+                        query = text(f"SELECT id FROM repository WHERE name = :name")
+                        result = connection.execute(query, {'name': milestone['repository']}).fetchone()
+                        repository_id = result[0];
+
+                        # Inserindo SaoPaulo TIMEZONE
+                        milestone['created_at'] = self.handlingTimeZoneToPostgres(milestone['created_at'])
+                        milestone['updated_at'] = self.handlingTimeZoneToPostgres(milestone['updated_at'])
+
+                        insert_query = text(f"INSERT INTO milestone (id, repository_id, title, description, number, state, created_at, updated_at, creator) VALUES (:id, :repository_id, :title, :description, :number, :state, :created_at, :updated_at, :creator) RETURNING id")
+                        new_id = connection.execute(insert_query, {'id': milestone['id'], 'repository_id': repository_id, 'title': milestone['title'], 'description': milestone['description'], 'number': milestone['number'], 'state': milestone['state'], 'created_at': milestone['created_at'], 'updated_at': milestone['updated_at'], 'creator': milestone['creator']}).scalar_one()
+                        print(f"Milestone '{milestone['title']}' inserida com ID: {new_id}")
+                connection.commit()
+        except Exception as e:
+            print(f"Erro ao inserir milestones: {e}")
+
+        print("\n--- Milestones Done ---")
+
+    def handlingTimeZoneToPostgres(self, naive_datetime):
+        # Definir o fuso horário brasileiro de São Paulo
+        brazil_tz = pytz.timezone('America/Sao_Paulo')
+
+        # Isso anexa a informação de fuso horário SEM mudar os componentes de hora.
+        dt_localized_brazil = brazil_tz.localize(naive_datetime, is_dst=None) # 'is_dst=None' para inferir DST se houver ambiguidade
+
+        # print(f"Localizado (Brasil): {dt_localized_brazil} | Timezone: {dt_localized_brazil.tzinfo}")
+
+        return dt_localized_brazil
