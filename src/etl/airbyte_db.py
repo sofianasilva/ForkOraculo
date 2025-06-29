@@ -28,6 +28,7 @@ engine = create_engine(DATABASE_URL)
 # Se você usar as IDs originais do Airbyte como PKs, este passo é simplificado.
 user_id_map = {}
 repo_id_map = {}
+milestone_id_map = {}
 # --- Funções para Mapear e Inserir ---
 
 def insert_users(users_airbyte):
@@ -89,11 +90,50 @@ def insert_repositories(repos_airbyte):
         print(f"Erro ao inserir repositories: {e}")
 
     print("\n--- Repositories Done ---")
+
+def insert_milestones(milestones_airbyte):
+    print("\n--- Loading Milestones ---")
+    if len(milestones_airbyte) == 0:
+        print("Nenhum dado de repositório no cache do Airbyte.")
+        return
+
+    # print(milestones_airbyte);
+    # print('\n')
+
+    try:
+        with engine.connect() as connection:
+            for index, milestone in enumerate(milestones_airbyte):
+                query = text(f"SELECT id FROM milestone WHERE id = :id")
+                result = connection.execute(query, {'id': milestone['id']}).fetchone()
+
+                if result:
+                    milestone_id_map[milestone['id']] = result[0]
+                    print(f"Milestone '{milestone['title']}' já existe. ID: {result[0]}")
+                else:
+                    # Resolvendo id repo
+                    query = text(f"SELECT id FROM repository WHERE name = :name")
+                    result = connection.execute(query, {'name': milestone['repository']}).fetchone()
+                    repository_id = result[0];
+
+                # Inserindo SaoPaulo TIMEZONE
+                milestone['created_at'] = handlingTimeZoneToPostgres(milestone['created_at'])
+                milestone['updated_at'] = handlingTimeZoneToPostgres(milestone['updated_at'])
+
+                insert_query = text(f"INSERT INTO milestone (id, repository_id, title, description, number, state, created_at, updated_at, creator) VALUES (:id, :repository_id, :title, :description, :number, :state, :created_at, :updated_at, :creator) RETURNING id")
+                new_id = connection.execute(insert_query, {'id': milestone['id'], 'repository_id': repository_id, 'title': milestone['title'], 'description': milestone['description'], 'number': milestone['number'], 'state': milestone['state'], 'created_at': milestone['created_at'], 'updated_at': milestone['updated_at'], 'creator': milestone['creator']}).scalar_one()
+                milestone_id_map[milestone['id']] = new_id
+                print(f"Milestone '{milestone['title']}' inserida com ID: {new_id}")
+            connection.commit()
+    except Exception as e:
+        print(f"Erro ao inserir milestones: {e}")
+
+    print("\n--- Milestones Done ---")
 def data_transform(read_result):
     print("\n--- Data Transform Initiated---")
     added_user_logins = []
     users = []
     repositories = []
+    milestones = []
     for stream_name, dataset in read_result.streams.items():
         for i, record in enumerate(dataset):
             ## Populando usuários em todas as streams
@@ -114,6 +154,13 @@ def data_transform(read_result):
                 # print(f"  Record {i+1}: repo: {repo}") # Imprime toda vez q encontra um repositório
                 if(repo not in repositories):
                     repositories.append(repo)
+            ## Populando milestones em todas as streams
+            if (stream_name.lower() == 'issue_milestones'):
+                # print(f"    milestone {i+1}: id: {record.id}, title: {record.title}, body: {record.description}, number: {record.number}, state: {record.state}, created_at: {record.created_at}, updated_at: {record.updated_at}, creator: {record.creator['id']}") # Imprime toda vez q encontra usuario
+                
+                milestones.append({
+                    "id": record.id, "repository": record.repository.lower(), "title": record.title, "description": record.description, "number": record.number, "state": record.state, "created_at": record.created_at, "updated_at": record.updated_at, "creator": record.creator['id']
+                })
             # Se a stream for assginees, adiciona mais usuarios, se possível
             if (stream_name.lower() == 'assignees'):
                 # print(f"    assignee {i+1}: id: {record.id}, login: {record.login}, html_url: {record.html_url}") # Imprime toda vez q encontra usuario
@@ -129,6 +176,19 @@ def data_transform(read_result):
     return {
         "users": users,
         "repositories": repositories,
+        "milestones": milestones,
+
+def handlingTimeZoneToPostgres(naive_datetime):
+    # Definir o fuso horário brasileiro de São Paulo
+    brazil_tz = pytz.timezone('America/Sao_Paulo')
+
+    # Isso anexa a informação de fuso horário SEM mudar os componentes de hora.
+    dt_localized_brazil = brazil_tz.localize(naive_datetime, is_dst=None) # 'is_dst=None' para inferir DST se houver ambiguidade
+
+    # print(f"Localizado (Brasil): {dt_localized_brazil} | Timezone: {dt_localized_brazil.tzinfo}")
+
+    return dt_localized_brazil
+
 # --- Orquestração da Inserção ---
 def run_data_insertion(read_result):
     # Trata os dados e retorna os formatados para insert 
@@ -138,9 +198,12 @@ def run_data_insertion(read_result):
     # print(cached_airbyte_data['users'])
     # print("\nRepos")
     # print(cached_airbyte_data['repositories'])
+    # print("\nMilestones")
+    # print(cached_airbyte_data['milestones'])
     # Ordem de inserção é crucial devido às chaves estrangeiras
     insert_users(cached_airbyte_data['users'])
     insert_repositories(cached_airbyte_data['repositories'])
+    insert_milestones(cached_airbyte_data['milestones']) # Depende de repositorios
 
 # --- Execução ---
 if __name__ == "__main__":
