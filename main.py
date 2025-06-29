@@ -1,9 +1,12 @@
-from src.etl.airbyte import airbyte 
-from src.assets.pattern.singleton import SingletonMeta
+from src.etl.ETL import ETL 
 import uvicorn
 from src.assets.aux.flags import flags
 
 # Airbyte 
+
+from src.assets.aux.env import env
+# GitHub env var
+GITHUB_TOKEN = env["GITHUB_TOKEN"]
 
 # Todos seus repositorios:  ["username/*"] ou 
 # Repositorios especificos: ["username/repo1", "username/repo2"] ...
@@ -13,16 +16,17 @@ repos = ["bpthiago/oraculo-documentation", "bpthiago/oraculo"]
 streams = ["issues", "repositories", "pull_requests", "commits", "teams", "users", "issue_milestones", "projects_v2", "team_members", "team_memberships", "assignees", "branches"]
 
 if(flags.etl == True or flags.etl_only == True):
-    etl = airbyte(repos, streams)
+    etl = ETL(repos, streams, GITHUB_TOKEN)
     try:
-        etl.start()
+        etl.run()
     except Exception as e:
         print(f"Ocorreu um erro inesperado: {e}")
-        print("Prosseguindo para inicio da API.")
 
     if(flags.etl_only == True):
+        print("Fim do programa")
         exit(0)
 
+print("Prosseguindo para inicio da API.")
 # --- API ---
 
 api_root_path = "src.api.app"
