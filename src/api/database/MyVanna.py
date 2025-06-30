@@ -98,7 +98,6 @@ class MyVanna(ChromaDB_VectorStore, GoogleGeminiChat):
             return ""
 
     def connect_to_postgres(self, host, dbname, user, password, port):
-        
         self.db_url = f'postgresql://{user}:{password}@{host}:{port}/{dbname}'
         self.schema = self.get_schema()
 
@@ -127,30 +126,109 @@ class MyVanna(ChromaDB_VectorStore, GoogleGeminiChat):
         schema = self.get_schema()
 
         self.train(ddl=self.schema)
-        self.train(documentation="""A  tabela commits armazena informações sobre os commits realizados em repositórios, incluindo o nome do repositório, o branch, a data de criação, o hash SHA do commit, URLs associadas e diversos campos em formato JSON que detalham o conteúdo do commit, os autores, os responsáveis pela aplicação e os pais do commit. Os campos iniciados por _airbyte_ são metadados técnicos usados para controle de extração e versionamento dos dados.
-        A tabela issue_milestones representa os marcos definidos nos repositórios para organizar o progresso das issues. Ela contém informações como o repositório, título e descrição do marco, estado (aberto ou fechado), contagens de issues abertas e fechadas, e datas relevantes como criação, atualização, encerramento e prazo.
-        A tabela issues registra as issues criadas nos repositórios, com detalhes como título, estado, descrição, usuário autor, labels, responsáveis atribuídos, associação com pull requests e marcos, número de comentários, e datas de criação, atualização e encerramento. Há também campos JSON que armazenam dados estruturados como informações de usuários e reações.
-        A tabela projects_v2 reúne dados sobre projetos do tipo GitHub Projects versão 2, contendo informações como título, descrição curta, status de visibilidade, se é um template, se está fechado, URLs associadas e o repositório ao qual pertence. Campos booleanos indicam permissões de visualização e edição por parte do usuário.
-        A tabela pull_requests registra os pull requests enviados nos repositórios, contendo o título, corpo, estado, data de criação, encerramento e merge, bem como URLs e status relacionados. Também inclui vários campos em formato JSON detalhando o usuário que criou o PR, revisores solicitados, branches de origem e destino, e links para outros recursos.
-        A tabela repositories contém os dados gerais dos repositórios. Inclui identificadores como nome, descrição, URLs da API, estatísticas como número de estrelas, forks, issues abertas, permissões, visibilidade, e informações sobre recursos habilitados (wiki, issues, downloads, páginas, entre outros). Também são armazenadas datas de criação, atualização e último push, além de dados sobre a licença e tópicos associados.
-        A tabela team_members lista os membros de equipes dentro de uma organização, com informações como login, ID, URLs de perfil e eventos, tipo de conta, se é administrador do site, e a organização e equipe às quais pertencem.
-        A tabela team_memberships relaciona usuários a equipes específicas, com campos que indicam o estado da associação, o papel do membro, a organização, o slug da equipe e o nome de usuário correspondente.
-        A tabela teams armazena dados sobre equipes em uma organização, incluindo nome, slug, descrição, privacidade, configuração de notificações, permissões de acesso, URLs relacionadas e dados sobre a equipe-pai quando aplicável.
-        Por fim, a tabela users contém informações sobre os usuários do GitHub, com dados como login, ID, tipo de conta, URLs de perfil e atividades, organização associada, e se o usuário é um administrador. Também contém informações extraídas via API, como avatares e dados de eventos.
-        Cada uma dessas tabelas utiliza índices nos campos de extração do Airbyte e em campos principais como IDs ou SHAs, permitindo buscas eficientes e controle sobre a origem e atualização dos dados.""")
 
+        self.train(documentation="""
+        A tabela repository armazena os repositórios, identificados por um ID único e nome.
+
+        A tabela user contém informações dos usuários, como login e URL de perfil. É usada como referência em outras tabelas, como quem criou issues, pull requests e milestones.
+
+        A tabela milestone representa marcos definidos nos repositórios, contendo título, descrição, número, estado (aberta ou fechada), datas de criação e atualização, o repositório ao qual pertence e o usuário criador.
+
+        A tabela issue armazena tarefas ou bugs reportados. Contém título, corpo, número, autor, repositório, milestone relacionada, datas e URL. As atribuições de usuários a uma issue são registradas em issue_assignees.
+
+        A tabela pull_requests armazena os pull requests criados nos repositórios. Inclui título, corpo, número, estado, criador, repositório, milestone (opcional), datas e URL. Os responsáveis são registrados em pull_request_assignees.
+
+        A tabela branch armazena os nomes de branches de cada repositório.
+
+        A tabela commits armazena cada commit feito. Cada registro contém o SHA, mensagem, autor (usuário), repositório, branch (opcional), data de criação e URL. Também há referência à tabela de usuários.
+
+        A tabela parents_commits representa a relação entre commits e seus pais (para commits com múltiplos ancestrais, como em merges). Usa o SHA do commit pai e o ID do commit filho.
+
+        A tabela issue_assignees relaciona múltiplos usuários a uma mesma issue, representando atribuições de tarefas. É uma tabela de junção entre issues e usuários.
+
+        A tabela pull_request_assignees relaciona múltiplos usuários a um pull request, permitindo registrar quem é responsável por revisar ou aprovar um PR.
+
+        O modelo garante integridade por meio de chaves estrangeiras, e unicidade de registros por restrições compostas (como número + repositório para issues, pull requests e milestones).
+        """)
+        
         self.train(sql="""
+        -- 1. Repositórios com mais issues abertas
         SELECT
-            i.repository,
+            r.name AS repositorio,
             COUNT(*) AS total_issues_abertas,
             MAX(i.created_at) AS data_ultima_issue
         FROM
-            public.issues i
+            issue i
+        JOIN
+            repository r ON i.repository_id = r.id
         WHERE
             i.state = 'open'
         GROUP BY
-            i.repository
+            r.name
         ORDER BY
             total_issues_abertas DESC
         LIMIT 10;
+        """)
+
+        self.train(sql="""
+        -- 2. Top 5 usuários com mais commits registrados
+        SELECT
+            u.login,
+            COUNT(*) AS total_commits
+        FROM
+            commits c
+        JOIN
+            "user" u ON c.user_id = u.id
+        GROUP BY
+            u.login
+        ORDER BY
+            total_commits DESC
+        LIMIT 5;
+        """)
+
+        self.train(sql="""
+        -- 3. Total de pull requests abertos por repositório
+        SELECT
+            r.name AS repositorio,
+            COUNT(*) AS total_pr_abertos
+        FROM
+            pull_requests pr
+        JOIN
+            repository r ON pr.repository_id = r.id
+        WHERE
+            pr.state = 'open'
+        GROUP BY
+            r.name
+        ORDER BY
+            total_pr_abertos DESC;
+        """)
+
+        self.train(sql="""
+        -- 4. Número de issues por milestone
+        SELECT
+            m.title AS milestone,
+            COUNT(*) AS total_issues
+        FROM
+            issue i
+        JOIN
+            milestone m ON i.milestone_id = m.id
+        GROUP BY
+            m.title
+        ORDER BY
+            total_issues DESC;
+        """)
+
+        self.train(sql="""
+        -- 5. Commits feitos por branch
+        SELECT
+            b.name AS branch,
+            COUNT(*) AS total_commits
+        FROM
+            commits c
+        JOIN
+            branch b ON c.branch_id = b.id
+        GROUP BY
+            b.name
+        ORDER BY
+            total_commits DESC;
         """)
