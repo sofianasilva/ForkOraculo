@@ -93,6 +93,7 @@ class ETL(metaclass=SingletonMeta):
         issues = []
         commits = []
         branches = []
+        pr_commits = []
         milestones = []
         repositories = []
         pull_requests = []
@@ -174,7 +175,7 @@ class ETL(metaclass=SingletonMeta):
                             added_user_logins.append(user_login)
 
                         commits.append({
-                            "user_id": record.author['id'], "repository": record.repository.lower(), "branch": record.branch.lower(), "created_at": record.created_at, "message": record.commit['message'], "sha": record.sha, "parents": record.parents, "html_url": record.html_url 
+                            "user_id": record.author['id'], "repository": record.repository.lower(), "pull_request_id": None, "branch": record.branch.lower(), "created_at": record.created_at, "message": record.commit['message'], "sha": record.sha, "parents": record.parents, "html_url": record.html_url 
                         })
                 
                 # Se a stream for assginees, adiciona mais usuarios, se possível
@@ -188,6 +189,15 @@ class ETL(metaclass=SingletonMeta):
                             "html_url": record.html_url
                         })
                         added_user_logins.append(user_login)
+
+                ## Vinculando commits a suas pull requests
+                if(stream_name.lower() == 'pull_request_commits'):
+                    # print(f"  pr_commit {i+1}: {record.sha}, {record.pull_number}") # Imprime toda vez q encontra um branch
+                    pr_commits.append({
+                        'sha': record.sha, 'pr_number': record.pull_number, 'pr_id': None
+                    })
+
+        self.map_commit_sha_to_pr_id(commits, pull_requests, pr_commits)
 
         print("--- Data Transform Completed ---")
 
@@ -441,16 +451,19 @@ class ETL(metaclass=SingletonMeta):
         try:
             with self.engine.connect() as connection:
                 for index, commit in enumerate(commits_airbyte):
+                    # Necessário para resolver branch id posteriormente
                     query = text(f"SELECT id FROM repository WHERE name = :name")
                     repo_result = connection.execute(query, {'name': commit['repository']}).fetchone()
                     repository_id = repo_result[0]
 
-                    query = text(f"SELECT id FROM commits WHERE sha = :sha AND repository_id = :repository_id")
-                    result = connection.execute(query, {'sha': commit['sha'], 'repository_id': repository_id}).fetchone()
+                    # Checa se ja foi inserido
+                    query = text(f"SELECT id FROM commits WHERE sha = :sha")
+                    result = connection.execute(query, {'sha': commit['sha']}).fetchone()
 
                     if result:
-                        print(f"Commit '{commit['sha']}' já existe para repo {commit['repository']}. ID: {result[0]}")
+                        print(f"Commit '{commit['sha']}' já foi adicionado. ID: {result[0]}")
                     else:
+                        # Necessário para inserção 
                         query = text(f"SELECT id FROM branch WHERE name = :name AND repository_id = :repository_id")
                         result = connection.execute(query, {'name': commit['branch'], 'repository_id': repository_id}).fetchone()
                         branch_id = result[0]
@@ -458,13 +471,14 @@ class ETL(metaclass=SingletonMeta):
                         # Inserindo SaoPaulo TIMEZONE
                         commit['created_at'] = self.handlingTimeZoneToPostgres(commit['created_at'])
 
+                        # INSERT
                         insert_query = text(f"""
-                            INSERT INTO commits (user_id, branch_id, repository_id, created_at, message, sha, html_url)
-                            VALUES (:user_id, :branch_id, :repository_id, :created_at, :message, :sha, :html_url)
+                            INSERT INTO commits (user_id, branch_id, pull_request_id, created_at, message, sha, html_url)
+                            VALUES (:user_id, :branch_id, :pull_request_id, :created_at, :message, :sha, :html_url)
                             RETURNING id
                         """)
                         new_commit_id = connection.execute(insert_query, {
-                            'user_id': commit['user_id'], 'branch_id': branch_id, 'repository_id': repository_id,
+                            'user_id': commit['user_id'], 'branch_id': branch_id, 'pull_request_id': commit['pull_request_id'],
                             'created_at': commit['created_at'], 'message': commit['message'], 'sha': commit['sha'], 'html_url': commit['html_url']
                         }).scalar_one()
                         print(f"Commit '{commit['sha']}' inserido para repo {commit['repository']} com ID: {new_commit_id}")
@@ -492,3 +506,21 @@ class ETL(metaclass=SingletonMeta):
         # print(f"Localizado (Brasil): {dt_localized_brazil} | Timezone: {dt_localized_brazil.tzinfo}")
 
         return dt_localized_brazil
+
+    def map_commit_sha_to_pr_id(self, commits, pull_requests, pr_commits):
+        pr_number_id = {}
+        commit_sha_pr_id = {}
+        # Resolvendo number -> id
+        for pr in pull_requests:
+            pr_number_id[pr['number']] = pr['id']
+
+        # print(pr_commits)
+        # Resolvendo sha -> id
+        for pr_commit in pr_commits:
+            # commit['pr_id'] = pr_number_id[pr_commit['pr_number']]
+            commit_sha_pr_id[pr_commit['sha']] = pr_number_id[pr_commit['pr_number']]
+
+        # Se sha do commit no dicionario, atualiza o pull_request_id do commit
+        for commit in commits:
+            # if(commit['sha'] in commit_sha_pr_id.key()):
+            commit['pull_request_id'] = commit_sha_pr_id.get(commit['sha'], None)

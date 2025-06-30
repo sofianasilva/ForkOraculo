@@ -149,7 +149,7 @@ CREATE TABLE commits (
     id BIGSERIAL PRIMARY KEY, -- ID auto-incrementável para a tabela de commits
     user_id BIGINT NOT NULL,      -- Chave estrangeira para o usuário que fez o commit
     branch_id INTEGER,             -- Chave estrangeira para a branch à qual o commit pertence (pode ser nulo se o commit não estiver associado a uma branch específica ou for órfão)
-    repository_id INTEGER NOT NULL, -- Chave estrangeira para o repositório ao qual o commit pertence
+    pull_request_id BIGINT, -- Chave estrangeira para o repositório ao qual o commit pertence
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- Data e hora de criação do commit
     message TEXT NOT NULL,          -- Mensagem do commit
     sha VARCHAR(40) UNIQUE NOT NULL, -- SHA do commit (hash, geralmente 40 caracteres para Git), deve ser único
@@ -163,11 +163,11 @@ CREATE TABLE commits (
         FOREIGN KEY (branch_id)
         REFERENCES branch (id)
         ON DELETE SET NULL, -- Se a branch for excluída, o commit não é excluído, mas branch_id se torna NULL
-    CONSTRAINT fk_commit_repository
-        FOREIGN KEY (repository_id)
-        REFERENCES repository (id)
+    CONSTRAINT fk_commit_pull_request
+        FOREIGN KEY (pull_request_id)
+        REFERENCES pull_requests (id)
         ON DELETE CASCADE,
-    CONSTRAINT unq_commit_sha_repo_id UNIQUE (sha, repository_id) -- Garante que o SHA do commit seja único por repositório
+    CONSTRAINT unq_commit_sha_pull_request_id UNIQUE (sha, pull_request_id) -- Garante que o SHA do commit seja único por pr
 );
 
 ---
