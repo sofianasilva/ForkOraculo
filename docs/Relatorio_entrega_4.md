@@ -36,7 +36,7 @@ A solução foi trazer os dados pelo cache do airbyte, ele salva os dados moment
 
 Representação gráfica do novo modelo do banco de dados:
 
-![Modelagem do Banco de Dados](./images/modelagem_banco.png)
+![Modelagem do Banco de Dados](./modelagem2.jpg)
 
 Assim, podemos aproveitar de alguns campos únicos do github , como: id do usuário, id da issue, id da milestone, ... em alguns outros casos que não retornam ids da api, criamos no banco com auto-increment e se necessário faz um select antes de uma nova inserção onde precisa de uma foreign-key.
 
