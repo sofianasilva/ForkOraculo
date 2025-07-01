@@ -228,13 +228,13 @@ class ETL(metaclass=SingletonMeta):
                     # Verifica se o usuário já existe pelo airbyte_id (se você mantiver essa coluna no seu DB)
                     # Ou pelo 'login' se 'login' for UNIQUE
                     
-                    query = text(f"SELECT id FROM \"user\" WHERE id = :id") # usar "user" por ser palavra reservada
+                    query = text(f"SELECT id FROM user_info WHERE id = :id") # usar "user" por ser palavra reservada
                     result = connection.execute(query, {'id': user['id']}).fetchone()
 
                     if result:
                         print(f"Usuário '{user['login']}' já existe. ID: {result[0]}")
                     else:
-                        insert_query = text(f"INSERT INTO \"user\" (id, login, html_url) VALUES (:id, :login, :html_url) RETURNING id")
+                        insert_query = text(f"INSERT INTO user_info (id, login, html_url) VALUES (:id, :login, :html_url) RETURNING id")
                         new_id = connection.execute(insert_query, {'id': user['id'], 'login': user['login'], 'html_url': user['html_url']}).scalar_one()
                         print(f"Usuário '{user['login']}' inserido com ID: {new_id}")
                 connection.commit() # Commit das operações

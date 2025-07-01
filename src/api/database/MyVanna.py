@@ -178,7 +178,7 @@ class MyVanna(ChromaDB_VectorStore, GoogleGeminiChat):
         FROM
             commits c
         JOIN
-            "user" u ON c.user_id = u.id
+            user_info u ON c.user_id = u.id
         GROUP BY
             u.login
         ORDER BY
