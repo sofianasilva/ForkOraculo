@@ -1,4 +1,3 @@
-from src.assets.pattern.singleton import SingletonMeta
 import airbyte as ab
 from airbyte.caches import PostgresCache
 

@@ -30,12 +30,21 @@ Siga estas etapas para configurar o projeto localmente:
 
 3. Renomeie o arquivo `example.env` para somente `.env`
 
-4. Utilize os comandos a seguir para iniciar os serviços:
+4. No arquivo `main.py`: Atualiza a variável **repos** com os seus repositórios, acessível pelo seu token do github.
+
+5. Utilize os comandos a seguir para iniciar os serviços (isso deve demorar um pouco mesmo depois de criados os contêineres):
 
     Para iniciar o contêiner:
     ```bash
       docker compose up -d
     ```
+
+6. Após acessível o **OpenWeb UI**: 
+- Crie sua conta local, o email não precisa ser verificado e nem válido.
+- Ao logar, vá até [http://localhost:3000/admin/functions](http://localhost:3000/admin/functions), clique em **import functions** e adicione a pipeline como uma nova função, importando o arquivo `src/assets/open_web_ui/pipeline_api.json`
+- Lembre-se de ativar a função habilitando-a.
+- Retorne a pagina inicial: [http://localhost:3000](localhost:3000)
+
 5. Utilize os comandos a seguir para parar os contêineres:
 
     Para parar o contêiner:
@@ -65,11 +74,7 @@ Para abrir a ferramenta, acesse:
 
 - **OpenWebUI**: [http://localhost:3000](http://localhost:3000)
 
-### OpenWebUI
-
-Adicione a pipeline como uma nova função, importando o arquivo `src/assets/open_web_ui/pipeline_api.json` no painel admin do OpenWebUI. 
-
-A pipeline ja está configurada para direcionar as perguntas para a api no backend.
+A função, pipeline, importada no passo **4** da instalação já está configurada para direcionar as perguntas para a api no backend.
 
 ## Arquitetura e Modularização
 
@@ -134,7 +139,7 @@ Oraculo/
 │   │   └── Dockerfile
 │   ├── db/
 │   │   ├── Dockerfile
-│   │   └── oraculo_20-06-25.sql
+│   │   └── init_db.sql
 │   └── front-end/
 │       └── Dockerfile
 ├── src/
@@ -168,7 +173,8 @@ Oraculo/
 │   │       └── singleton.py
 │   └── etl/
 │       ├── __init__.py
-│       └── airbyte.py
+│       ├── airbyte.py
+│       └── ETL.py
 ├── tests/
 │   ├── unit/
 │   │   ├── __init__.py

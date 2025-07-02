@@ -14,13 +14,13 @@ DROP TABLE IF EXISTS pull_requests CASCADE;
 DROP TABLE IF EXISTS issue CASCADE;
 DROP TABLE IF EXISTS milestone CASCADE;             -- Nova tabela
 DROP TABLE IF EXISTS repository CASCADE;
-DROP TABLE IF EXISTS "user" CASCADE;                -- "user" é uma palavra reservada, então aspas duplas são usadas
+DROP TABLE IF EXISTS user_info CASCADE;                -- "user" é uma palavra reservada, então aspas duplas são usadas
 
 ---
 
 -- Table: user
 -- Armazena informações sobre usuários
-CREATE TABLE "user" (
+CREATE TABLE user_info (
     id BIGSERIAL PRIMARY KEY, -- ID auto-incrementável para a tabela de usuários
     login VARCHAR(255) UNIQUE NOT NULL, -- Login do usuário (e.g., username do GitHub), deve ser único
     html_url TEXT NOT NULL -- Link para o perfil do usuário (TEXT para URLs longas)
@@ -52,7 +52,7 @@ CREATE TABLE milestone (
 
     CONSTRAINT fk_milestone_creator
         FOREIGN KEY (creator) -- Referencia a coluna 'creator' que você definiu
-        REFERENCES "user" (id)
+        REFERENCES user_info (id)
         ON DELETE CASCADE,
     CONSTRAINT fk_milestone_repository
         FOREIGN KEY (repository_id)
@@ -80,7 +80,7 @@ CREATE TABLE issue (
 
     CONSTRAINT fk_issue_created_by_user -- Nome mais específico para a FK do criador
         FOREIGN KEY (created_by)
-        REFERENCES "user" (id)
+        REFERENCES user_info (id)
         ON DELETE CASCADE,
     CONSTRAINT fk_issue_repository
         FOREIGN KEY (repository_id)
@@ -112,7 +112,7 @@ CREATE TABLE pull_requests (
 
     CONSTRAINT fk_pr_created_by_user -- Nome mais específico para a FK do criador
         FOREIGN KEY (created_by)
-        REFERENCES "user" (id)
+        REFERENCES user_info (id)
         ON DELETE CASCADE,
     CONSTRAINT fk_pr_repository
         FOREIGN KEY (repository_id)
@@ -149,7 +149,7 @@ CREATE TABLE commits (
     id BIGSERIAL PRIMARY KEY, -- ID auto-incrementável para a tabela de commits
     user_id BIGINT NOT NULL,      -- Chave estrangeira para o usuário que fez o commit
     branch_id INTEGER,             -- Chave estrangeira para a branch à qual o commit pertence (pode ser nulo se o commit não estiver associado a uma branch específica ou for órfão)
-    repository_id INTEGER NOT NULL, -- Chave estrangeira para o repositório ao qual o commit pertence
+    pull_request_id BIGINT, -- Chave estrangeira para o repositório ao qual o commit pertence
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- Data e hora de criação do commit
     message TEXT NOT NULL,          -- Mensagem do commit
     sha VARCHAR(40) UNIQUE NOT NULL, -- SHA do commit (hash, geralmente 40 caracteres para Git), deve ser único
@@ -157,17 +157,17 @@ CREATE TABLE commits (
 
     CONSTRAINT fk_commit_user
         FOREIGN KEY (user_id)
-        REFERENCES "user" (id)
+        REFERENCES user_info (id)
         ON DELETE CASCADE,
     CONSTRAINT fk_commit_branch
         FOREIGN KEY (branch_id)
         REFERENCES branch (id)
         ON DELETE SET NULL, -- Se a branch for excluída, o commit não é excluído, mas branch_id se torna NULL
-    CONSTRAINT fk_commit_repository
-        FOREIGN KEY (repository_id)
-        REFERENCES repository (id)
+    CONSTRAINT fk_commit_pull_request
+        FOREIGN KEY (pull_request_id)
+        REFERENCES pull_requests (id)
         ON DELETE CASCADE,
-    CONSTRAINT unq_commit_sha_repo_id UNIQUE (sha, repository_id) -- Garante que o SHA do commit seja único por repositório
+    CONSTRAINT unq_commit_sha_pull_request_id UNIQUE (sha, pull_request_id) -- Garante que o SHA do commit seja único por pr
 );
 
 ---
@@ -207,7 +207,7 @@ CREATE TABLE issue_assignees (
         ON DELETE CASCADE, -- Se a issue for excluída, suas atribuições também são
     CONSTRAINT fk_ia_user
         FOREIGN KEY (user_id)
-        REFERENCES "user" (id)
+        REFERENCES user_info (id)
         ON DELETE CASCADE  -- Se o usuário for excluído, suas atribuições a issues também são
 );
 
@@ -226,6 +226,6 @@ CREATE TABLE pull_request_assignees (
         ON DELETE CASCADE,
     CONSTRAINT fk_pra_user
         FOREIGN KEY (user_id)
-        REFERENCES "user" (id)
+        REFERENCES user_info (id)
         ON DELETE CASCADE
 );

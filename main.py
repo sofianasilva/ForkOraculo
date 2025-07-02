@@ -13,7 +13,7 @@ GITHUB_TOKEN = env["GITHUB_TOKEN"]
 repos = ["bpthiago/oraculo-documentation", "bpthiago/oraculo"]
 
 # Quais informações deseja trazer do github
-streams = ["issues", "repositories", "pull_requests", "commits", "teams", "users", "issue_milestones", "projects_v2", "team_members", "team_memberships", "assignees", "branches"]
+streams = ["issues", "repositories", "pull_requests", "commits", "teams", "users", "issue_milestones", "projects_v2", "team_members", "team_memberships", "assignees", "branches","pull_request_commits"]
 
 if(flags.etl == True or flags.etl_only == True):
     etl = ETL(repos, streams, GITHUB_TOKEN)
