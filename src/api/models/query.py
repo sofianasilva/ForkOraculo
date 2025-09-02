@@ -1,0 +1,1 @@
+# TODO: Inserir queries do vanna aqui?

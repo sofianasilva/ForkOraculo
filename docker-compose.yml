@@ -1,0 +1,72 @@
+volumes:
+  open_webui_data:
+  postgres_data:
+
+networks:
+  open:
+    driver: bridge
+  oraculo:
+
+services:
+  db:
+    container_name: db-container
+    build:
+      context: .
+      dockerfile: .docker/db/Dockerfile
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${EXPOSED_DB_PORT}:${DB_PORT}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - oraculo
+      - open
+  
+  back-end:
+    container_name: py-container
+    build: 
+      context: .
+      dockerfile: .docker/back-end/Dockerfile
+    volumes:
+      - .:/app  # Monta o código local (opcional, para desenvolvimento)
+      - /var/run/docker.sock:/var/run/docker.sock  # Monta o socket do host
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_URL=${DB_URL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL_NAME=${GEMINI_MODEL_NAME}
+    command: ["python", "main.py", "--etl"]
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+    networks:
+      - open
+      - oraculo
+
+  front-end:
+    container_name: open-webui-container
+    build:
+      context: .
+      dockerfile: .docker/front-end/Dockerfile
+    ports:
+      - 3000:8080
+    volumes:
+      - open_webui_data:/app/backend/data
+    restart: unless-stopped
+    depends_on:
+      - db
+      - back-end
+    networks:
+      - oraculo
