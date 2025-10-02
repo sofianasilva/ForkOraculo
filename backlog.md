@@ -48,31 +48,44 @@
 
 ---
 
-## Planejamento de Sprints
+## Planejamento de Sprints (1 semana cada)
 
-### Sprint 1: **Base da IA e Respostas Consistentes** (02/10/2025 -- 08/10/2025)
-- **Issue:** Feature 6 - Padronização de Respostas da IA  
+### Sprint 1: **Memória Inicial com LangChain** (02/10/2025 -- 08/10/2025)
+- **Issue:** Feature 3 - Memória Contextual com LangChain  
 
 ---
 
-### Sprint 2: **Primeiros Recursos Inteligentes** (09/10/2025 -- 22/10/2025)
-- **Issue:** Feature 3 - Memória Contextual com LangChain  
+### Sprint 2: **Visualização e Gráficos** (09/10/2025 -- 15/10/2025)
 - **Issue:** Feature 4 - Geração de Gráficos e Visualização de Dados  
 
 ---
 
-### Sprint 3: **Experiência do Usuário e Interface** (23/10/2025 -- 31/10/2025)
+### Sprint 3: **Padronização da IA - Parte 1** (16/10/2025 -- 22/10/2025)
+- **Issue:** Feature 6 - Padronização de Respostas da IA (início)  
+
+---
+
+### Sprint 4: **Interface e UX** (23/10/2025 -- 29/10/2025)
 - **Issue:** Feature 5 - Design de Frontend e Usabilidade (UX)  
 
 ---
 
-### Sprint 4: **Segurança e Integrações Críticas** (03/11/2025 -- 16/11/2025)
+### Sprint 5: **Autenticação Segura** (30/10/2025 -- 05/11/2025)
 - **Issue:** Feature 1 - Autenticação de Usuário e Controle de Acesso  
-- **Issue:** Feature 2 - Gerenciamento Dinâmico de Token  
 
 ---
 
-### Sprint 5: **Estabilização e Revisão Final** (17/11/2025 -- 30/11/2025)
+### Sprint 6: **Gerenciamento de Token - Parte 1** (06/11/2025 -- 12/11/2025)
+- **Issue:** Feature 2 - Gerenciamento Dinâmico de Token (início)  
+
+---
+
+### Sprint 7: **Gerenciamento de Token - Parte 2** (13/11/2025 -- 19/11/2025)
+- **Issue:** Feature 2 - Gerenciamento Dinâmico de Token (finalização)  
+
+---
+
+### Sprint 8: **Estabilização e Revisão Final** (20/11/2025 -- 30/11/2025)
 - **Issue:** Revisão e correção de problemas das issues realizadas anteriormente  
 
 ---
@@ -81,5 +94,5 @@
 
 | Data da Entrega | Sprints Inclusas | Features Entregues (Escopo) |
 | :--- | :--- | :--- |
-| **02/11/2025** | Sprint 1 + Sprint 2 | Funcionalidades de **Baixa e Média Complexidade** entregues: Padronização da IA (F6), Memória Contextual (F3) e Geração de Gráficos (F4). |
-| **30/11/2025** | Sprint 3 + Sprint 4 + Sprint 5 | Funcionalidades de **Alta Complexidade** entregues: Design de Frontend e Usabilidade (F5), Autenticação/Controle de Acesso (F1) e Gerenciamento Dinâmico de Token (F2). Além disso, inclui o período de estabilização e revisão final (Sprint 5). |
+| **02/11/2025** | Sprint 1 + Sprint 2 + Sprint 3 | Funcionalidades iniciais entregues: Memória Contextual (F3), Geração de Gráficos (F4) e Padronização da IA - Parte 1 (F6). |
+| **30/11/2025** | Sprint 4 + Sprint 5 + Sprint 6 + Sprint 7 + Sprint 8 | Funcionalidades finais entregues: Design de Frontend e Usabilidade (F5), Autenticação/Controle de Acesso (F1), Gerenciamento Dinâmico de Token (F2), e Estabilização/Revisão Final. |
