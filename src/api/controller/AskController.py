@@ -23,22 +23,16 @@ class AskController(metaclass=SingletonMeta):
         self.vn.prepare()
 
     def ask(self, question: Question):
-        client = genai.Client(api_key=GEMINI_API_KEY)
-
-        vn = MyVanna(config={
-            'print_prompt': False, 
-            'print_sql': False,
-            'api_key': GEMINI_API_KEY,
-            'model_name': GEMINI_MODEL_NAME
-        })
 
         try:
-            sql_gerado = vn.generate_sql(question.question)
+
+            
+            sql_gerado = self.vn.generate_sql(question.question)
 
             if "SELECT" not in sql_gerado.upper():
                 return {"output": "Não consegui entender sua pergunta bem o suficiente para gerar uma resposta SQL válida."}
 
-            resultado = vn.run_sql(sql_gerado)
+            resultado = self.vn.run_sql(sql_gerado)
 
             if not resultado:
                 return {"output": "A consulta foi feita, mas não há dados correspondentes no banco."}
@@ -54,7 +48,7 @@ class AskController(metaclass=SingletonMeta):
             Gere uma resposta clara e útil para o usuário, explicando o que o resultado significa.
             """
 
-            response = client.models.generate_content(
+            response = self.client.models.generate_content(
                 model=GEMINI_MODEL_NAME,
                 contents=prompt,
                 config={
